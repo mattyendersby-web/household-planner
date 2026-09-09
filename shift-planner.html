@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Household Planner</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0F131A">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230F131A'/%3E%3Ctext x='96' y='124' font-family='Georgia,serif' font-size='78' fill='%23D8B679' text-anchor='middle'%3EHP%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230F131A'/%3E%3Ctext x='96' y='124' font-family='Georgia,serif' font-size='78' fill='%23D8B679' text-anchor='middle'%3EHP%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Household%20Planner%22%2C%22short_name%22%3A%22Planner%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230F131A%22%2C%22theme_color%22%3A%22%230F131A%22%7D">
+<style>
+  :root{
+    --bg:#0F131A;
+    --surface:#1B212C;
+    --surface-2:#232B39;
+    --border:#2B3341;
+    --text:#F3F5F8;
+    --text-muted:#8E97A8;
+    --gold:#D8B679;
+    --gold-dim:#8A7550;
+
+    --day:#F0A857;
+    --night:#5C8CF0;
+    --evening:#B98CE8;
+    --overtime:#EE6B63;
+    --holiday:#48C793;
+    --off:#454C5C;
+    --event:#F17DA8;
+    --football:#42C9BB;
+    --district:#4FA8E8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding-bottom:48px;
+  }
+  .serif{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;}
+
+  header{
+    padding:20px 20px 0;
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:5;
+  }
+  .brand-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .brand{
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--gold);
+    font-weight:700;
+    text-transform:uppercase;
+  }
+  .today-pill{
+    font-size:12px;
+    color:var(--text-muted);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:6px 14px;
+    cursor:pointer;
+  }
+  .month-row{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .month-label{
+    font-size:32px;
+    line-height:1;
+    font-weight:500;
+    letter-spacing:-0.01em;
+  }
+  .month-label .yr{color:var(--text-muted); font-size:20px; margin-left:8px;}
+  .nav-btns{display:flex; gap:8px;}
+  .nav-btn{
+    width:38px;height:38px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text);
+    font-size:17px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .nav-btn:active{background:var(--surface-2);}
+
+  .tabs{
+    display:flex;
+    gap:22px;
+    padding:0 20px;
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{
+    background:none;border:none;
+    color:var(--text-muted);
+    font-size:13.5px;font-weight:600;
+    padding:12px 1px 13px;
+    position:relative;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .tab-btn.active{color:var(--text);}
+  .tab-btn.active::after{
+    content:'';position:absolute;left:0;right:0;bottom:-1px;
+    height:2px;background:var(--gold);border-radius:2px;
+  }
+
+  .share-note{
+    font-size:11px;
+    color:var(--text-muted);
+    padding:10px 20px 0;
+  }
+  .share-note b{color:var(--gold-dim);}
+  .backup-link{
+    background:none; border:none; color:var(--text-muted);
+    font-size:11px; text-decoration:underline; padding:6px 20px 0;
+    cursor:pointer; display:block;
+  }
+
+  .profile-tabs{display:flex; gap:8px; padding:16px 20px 0; overflow-x:auto; scrollbar-width:none;}
+  .profile-tabs::-webkit-scrollbar{display:none;}
+  .profile-pill{
+    flex:0 0 auto;
+    padding:8px 16px;
+    border-radius:20px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text-muted);
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .profile-pill.active{
+    background:var(--gold);
+    color:#20180C;
+    border-color:var(--gold);
+  }
+
+  .today-card{
+    margin:16px 20px 4px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:3px solid var(--gold);
+    border-radius:14px;
+    padding:16px 18px;
+  }
+  .today-card .td-date{
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .today-card ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px;}
+  .today-card li{display:flex; align-items:center; gap:10px; font-size:14px;}
+  .today-card .td-empty{font-size:13.5px;color:var(--text-muted);}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+
+  .legend{display:flex; gap:8px; overflow-x:auto; padding:16px 20px 2px; scrollbar-width:none;}
+  .legend::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; display:flex; align-items:center; gap:6px;
+    padding:6px 12px; border-radius:20px;
+    background:var(--surface); border:1px solid var(--border);
+    font-size:12px; color:var(--text-muted); white-space:nowrap;
+  }
+
+  .calendar-wrap{padding:14px 14px 0;}
+  .weekdays{display:grid; grid-template-columns:repeat(7,1fr); padding:0 4px; margin-bottom:8px;}
+  .weekdays div{text-align:center; font-size:10.5px; color:var(--text-muted); font-weight:700; letter-spacing:0.04em;}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; padding:0 4px;}
+  .day-cell{
+    aspect-ratio:1/1.15; border-radius:13px;
+    background:var(--surface); border:1px solid var(--border);
+    padding:7px 6px 6px; display:flex; flex-direction:column;
+    justify-content:space-between; position:relative; cursor:pointer; overflow:hidden;
+  }
+  .day-cell.pad{visibility:hidden;}
+  .day-cell.today{border-color:var(--gold);}
+  .day-num{font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-muted); font-weight:600;}
+  .day-cell.today .day-num{color:var(--gold);}
+  .dots-row{display:flex; flex-wrap:wrap; gap:3px; margin-top:auto;}
+  .day-label{
+    font-size:8.5px; color:var(--text-muted); line-height:1.15; margin-top:3px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+
+  .backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10; display:none; align-items:flex-end;}
+  .backdrop.show{display:flex;}
+  .sheet{
+    background:var(--surface); width:100%; border-radius:20px 20px 0 0;
+    padding:18px 18px 26px; max-height:86vh; overflow-y:auto; border-top:1px solid var(--border);
+  }
+  .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:3px;margin:0 auto 16px;}
+  .sheet h2{font-size:17px;margin:0 0 4px;}
+  .sheet .sub{font-size:12.5px;color:var(--text-muted);margin-bottom:16px;}
+  .field-label{font-size:11px;color:var(--text-muted);margin:14px 0 8px;text-transform:uppercase;letter-spacing:0.06em;}
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .type-opt{
+    display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:12px;
+    background:var(--surface-2);border:1.5px solid transparent;font-size:13.5px;cursor:pointer;color:var(--text);
+  }
+  .type-opt.selected{border-color:var(--gold);}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:11px 12px;border-radius:10px;font-size:14px;font-family:inherit;
+  }
+  select{font-size:13.5px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn-row{display:flex;gap:10px;margin-top:20px;}
+  .btn{flex:1;padding:13px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;}
+  .btn-primary{background:var(--gold);color:#20180C;}
+  .btn-ghost{background:var(--surface-2);color:var(--text);}
+  .tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .tag-pill{display:flex;align-items:center;gap:7px;background:var(--surface-2);padding:8px 10px;border-radius:10px;font-size:13px;}
+  .tag-pill button{background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:0;line-height:1;}
+  .note{font-size:11.5px;color:var(--text-muted);text-align:center;padding:18px 24px 0;}
+
+  #repeatView,#overtimeView,#fixturesView,#districtView{display:none;padding:18px 20px 30px;}
+  .fx-section{margin-bottom:26px;}
+  .fx-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0 0 12px;}
+  .fx-list{display:flex;flex-direction:column;gap:8px;}
+  .fx-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13.5px;
+  }
+  .fx-row .fx-date{color:var(--text-muted);font-size:12px;min-width:64px;font-variant-numeric:tabular-nums;}
+  .fx-row .fx-info{flex:1;padding:0 10px;}
+  .fx-row button{background:none;border:none;color:var(--overtime);font-size:16px;cursor:pointer;padding:0 4px;}
+  .fx-empty{font-size:13px;color:var(--text-muted);}
+  .fx-form{display:flex;flex-direction:column;gap:10px;}
+  .fx-form-row{display:grid;grid-template-columns:1.3fr 2fr 1fr;gap:8px;}
+  textarea{min-height:100px;margin-top:10px;resize:vertical;font-size:12.5px;}
+  .preview-item{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:10px;padding:9px 10px;font-size:13px;margin-bottom:6px;}
+  .preview-item input[type=checkbox]{width:17px;height:17px;flex:0 0 auto;}
+  .status-msg{font-size:12px;color:var(--gold);margin-top:8px;}
+
+  .lock-screen{
+    position:fixed; inset:0; z-index:100;
+    background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .lock-screen.hidden{display:none;}
+  .lock-box{width:100%; max-width:300px; text-align:center;}
+  .lock-title{font-size:24px; margin-bottom:6px;}
+  .lock-sub{font-size:13px; color:var(--text-muted); margin-bottom:22px;}
+  #pinInput{
+    width:100%; text-align:center; font-size:26px; letter-spacing:14px;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:14px 10px 14px 24px; border-radius:12px;
+  }
+  #pinError{color:var(--overtime); font-size:12.5px; margin-top:12px; display:none;}
+  .directions-link{
+    color:var(--gold); font-size:12px; text-decoration:none;
+    font-weight:600; white-space:nowrap;
+  }
+  .include-toggle{
+    display:flex; align-items:center; gap:9px;
+    margin-top:16px; font-size:13.5px; color:var(--text);
+    cursor:pointer;
+  }
+  .include-toggle input[type=checkbox]{
+    width:18px; height:18px; flex:0 0 auto; accent-color:var(--gold);
+  }
+  input[type=color]{
+    width:48px; height:44px; padding:2px; border-radius:10px;
+    border:1px solid var(--border); background:var(--surface-2); cursor:pointer;
+  }
+  .type-swatch{
+    width:32px; height:32px; padding:2px; border-radius:8px; flex:0 0 auto;
+    border:1px solid var(--border); background:var(--surface-2); cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-title serif">Household Planner</div>
+    <div class="lock-sub">Enter PIN to continue</div>
+    <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pinInput" placeholder="••••">
+    <button class="btn btn-primary" id="pinSubmitBtn" style="width:100%;margin-top:14px;">Unlock</button>
+    <div id="pinError">Incorrect PIN</div>
+  </div>
+</div>
+
+<header>
+  <div class="brand-row">
+    <div class="brand" id="brandHomeBtn" style="cursor:pointer;">Household Planner</div>
+    <button class="today-pill" id="todayBtn">Today</button>
+  </div>
+  <div class="month-row">
+    <div class="month-label serif" id="monthLabel">— <span class="yr"></span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" id="prevBtn">‹</button>
+      <button class="nav-btn" id="nextBtn">›</button>
+    </div>
+  </div>
+</header>
+
+<div class="profile-tabs" id="profileTabs"></div>
+
+<p class="share-note" id="shareNote"></p>
+<button class="backup-link" id="backupBtn">Download a backup of your data</button>
+
+<div class="today-card" id="todayCard">
+  <div class="td-date serif" id="todayDateLabel">Today</div>
+  <ul id="todayList"></ul>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabCalendarBtn">Calendar</button>
+  <button class="tab-btn" id="tabRepeatBtn">Repeat Pattern</button>
+  <button class="tab-btn" id="tabOvertimeBtn">Overtime</button>
+  <button class="tab-btn" id="tabFixturesBtn">MK Dons Fixtures</button>
+  <button class="tab-btn" id="tabDistrictBtn">Stevenage District</button>
+  <button class="tab-btn" id="tabTypesBtn">+ More</button>
+</div>
+
+<div id="calendarView">
+  <div class="legend" id="legend"></div>
+  <div class="calendar-wrap">
+    <div class="weekdays"><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <p class="note">Tap any day to add a shift or event.</p>
+</div>
+
+<div id="repeatView">
+  <div class="fx-section">
+    <h3>Add a repeating pattern</h3>
+    <div class="field-label" style="margin-top:0;">Shift type for "on" days</div>
+    <div class="type-grid" id="repeatTypeGrid"></div>
+    <div class="field-label">Time (optional)</div>
+    <div class="row2">
+      <div><div class="sub" style="margin-bottom:6px;">Start</div><input type="time" id="repeatTimeStart"></div>
+      <div><div class="sub" style="margin-bottom:6px;">End</div><input type="time" id="repeatTimeEnd"></div>
+    </div>
+    <div class="field-label">Start date</div>
+    <input type="date" id="repeatStart">
+    <div class="field-label">Pattern</div>
+    <div class="row2">
+      <div><div class="sub" style="margin-bottom:6px;">Days on</div><input type="number" id="daysOn" min="1" value="4"></div>
+      <div><div class="sub" style="margin-bottom:6px;">Days off</div><input type="number" id="daysOff" min="1" value="4"></div>
+    </div>
+    <div class="field-label">Repeat until</div>
+    <input type="date" id="repeatEnd">
+    <button class="btn btn-primary" id="applyRepeatBtn" style="width:100%;margin-top:16px;">Apply pattern</button>
+    <div id="repeatStatus" class="status-msg"></div>
+  </div>
+
+  <div class="fx-section">
+    <h3>Remove a pattern</h3>
+    <div class="sub" style="margin-bottom:10px;">Clear a shift type out of a date range — handy if you need to swap a rota over, e.g. clearing day shift before adding evening shift instead</div>
+    <div class="field-label" style="margin-top:0;">Shift type to clear</div>
+    <div class="type-grid" id="clearTypeGrid"></div>
+    <div class="field-label">From</div>
+    <input type="date" id="clearStart">
+    <div class="field-label">To</div>
+    <input type="date" id="clearEnd">
+    <button class="btn btn-ghost" id="clearRangeBtn" style="width:100%;margin-top:16px;">Clear this range</button>
+    <div id="clearStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<div id="overtimeView">
+  <div class="fx-section">
+    <h3>Overtime logged</h3>
+    <div class="fx-list" id="otList"></div>
+  </div>
+  <div class="fx-section">
+    <h3>Add overtime</h3>
+    <div class="fx-form">
+      <input type="date" id="otDate">
+      <div class="row2">
+        <div><div class="sub" style="margin-bottom:6px;">Start</div><input type="time" id="otStart"></div>
+        <div><div class="sub" style="margin-bottom:6px;">End</div><input type="time" id="otEnd"></div>
+      </div>
+      <input type="text" id="otNote" placeholder="Note (optional)">
+      <button class="btn btn-primary" id="otAddBtn">Add overtime</button>
+    </div>
+  </div>
+</div>
+
+<div id="fixturesView">
+  <div class="fx-section">
+    <h3>Upcoming fixtures</h3>
+    <div class="fx-list" id="fxList"></div>
+  </div>
+  <div class="fx-section">
+    <h3>Add a fixture manually</h3>
+    <div class="fx-form">
+      <input type="date" id="fxDate">
+      <div class="fx-form-row">
+        <input type="text" id="fxOpponent" placeholder="Opponent">
+        <select id="fxVenue"><option value="H">Home</option><option value="A">Away</option><option value="N">Neutral</option></select>
+        <button class="btn btn-primary" id="fxAddBtn" style="padding:10px 6px;font-size:12.5px;">Add</button>
+      </div>
+      <div class="row2">
+        <div><div class="sub" style="margin-bottom:6px;">Kickoff (optional)</div><input type="time" id="fxKickoff"></div>
+        <div><div class="sub" style="margin-bottom:6px;">Address / meeting point (optional)</div><input type="text" id="fxAddress" placeholder="e.g. Colney Heath FC, AL4 0PB"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fx-section">
+    <h3>Import a fixture list</h3>
+    <div class="sub" style="margin-bottom:10px;">Copy the fixture list text from a PDF or webpage and paste it below — no upload needed</div>
+    <textarea id="fxRawText" placeholder="Paste a fixture list here, e.g. '19 September 2026 Newbury Stevenage A'"></textarea>
+    <button class="btn btn-ghost" id="fxParseBtn" style="width:100%;margin-top:10px;">Find fixtures in this text</button>
+    <div id="fxParseStatus" class="status-msg"></div>
+    <div id="fxPreviewList" style="margin-top:14px;"></div>
+    <button class="btn btn-primary" id="fxAddSelectedBtn" style="width:100%;margin-top:10px;display:none;">Add selected fixtures</button>
+  </div>
+</div>
+
+<div id="districtView">
+  <div class="fx-section">
+    <h3>Upcoming fixtures &amp; dates</h3>
+    <div class="fx-list" id="districtList"></div>
+  </div>
+  <div class="fx-section">
+    <h3>Add a fixture manually</h3>
+    <div class="fx-form">
+      <input type="date" id="districtDate">
+      <div class="fx-form-row">
+        <input type="text" id="districtOpponent" placeholder="Opponent / fixture name">
+        <select id="districtVenue"><option value="H">Home</option><option value="A">Away</option><option value="N">Neutral</option></select>
+        <button class="btn btn-primary" id="districtAddBtn" style="padding:10px 6px;font-size:12.5px;">Add</button>
+      </div>
+      <div class="row2">
+        <div><div class="sub" style="margin-bottom:6px;">Kickoff (optional)</div><input type="time" id="districtKickoff"></div>
+        <div><div class="sub" style="margin-bottom:6px;">Address / meeting point (optional)</div><input type="text" id="districtAddress" placeholder="e.g. Colney Heath FC, AL4 0PB"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fx-section">
+    <h3>Import a fixture list</h3>
+    <div class="sub" style="margin-bottom:10px;">Copy the fixture list text from a PDF or webpage and paste it below — no upload needed</div>
+    <textarea id="districtRawText" placeholder="Paste a fixture list here, e.g. '19 September 2026 Newbury Stevenage A'"></textarea>
+    <button class="btn btn-ghost" id="districtParseBtn" style="width:100%;margin-top:10px;">Find fixtures in this text</button>
+    <div id="districtParseStatus" class="status-msg"></div>
+    <div id="districtPreviewList" style="margin-top:14px;"></div>
+    <button class="btn btn-primary" id="districtAddSelectedBtn" style="width:100%;margin-top:10px;display:none;">Add selected fixtures</button>
+  </div>
+</div>
+
+<div id="typesView">
+  <button class="btn btn-ghost" id="toggleTypesPanelBtn" style="width:100%;">Add or Remove Types</button>
+  <div id="typesPanel" style="display:none; margin-top:18px;">
+    <div class="fx-section">
+      <h3>Shift &amp; event types</h3>
+      <div class="sub" style="margin-bottom:10px;">Tap a colour swatch to change it — applies everywhere that type is used</div>
+      <div id="typesList" class="fx-list"></div>
+    </div>
+    <div class="fx-section">
+      <h3>Add a new type</h3>
+      <div class="fx-form">
+        <input type="text" id="newTypeName" placeholder="e.g. Training, School Run">
+        <div class="fx-form-row" style="grid-template-columns:1fr 2fr;">
+          <input type="color" id="newTypeColor" value="#D8B679">
+          <button class="btn btn-primary" id="addTypeBtn">+ Add type</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="doneTypesBtn" style="width:100%;margin-top:6px;">Done</button>
+  </div>
+
+  <button class="btn btn-ghost" id="toggleCodePanelBtn" style="width:100%;margin-top:14px;">Change Code</button>
+  <div id="codePanel" style="display:none; margin-top:18px;">
+    <div class="fx-section">
+      <h3>Change access code</h3>
+      <div class="field-label" style="margin-top:0;">Current code</div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="currentCodeInput" placeholder="••••">
+      <div class="field-label">New code</div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="newCodeInput" placeholder="••••">
+      <div class="field-label">Confirm new code</div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="confirmCodeInput" placeholder="••••">
+      <button class="btn btn-primary" id="saveCodeBtn" style="width:100%;margin-top:14px;">Save new code</button>
+      <div id="codeStatus" class="status-msg"></div>
+      <button class="btn btn-ghost" id="doneCodeBtn" style="width:100%;margin-top:10px;">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Day editor sheet -->
+<div class="backdrop" id="dayBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="dayTitle">Day</h2>
+    <div class="sub">Everything happening on this day</div>
+    <div class="field-label" style="margin-top:0;">Entries</div>
+    <div class="tag-list" id="dayEntries"></div>
+
+    <button class="btn btn-primary" id="showAddFormBtn" style="width:100%;margin-top:18px;">+ Add an entry</button>
+
+    <div id="addEntryForm" style="display:none;">
+      <div class="field-label">Type</div>
+      <select id="entryTypeSelect"></select>
+      <div class="field-label">Time (optional)</div>
+      <div class="row2">
+        <div><div class="sub" style="margin-bottom:6px;">Start</div><input type="time" id="entryStart"></div>
+        <div><div class="sub" style="margin-bottom:6px;">End</div><input type="time" id="entryEnd"></div>
+      </div>
+      <div class="field-label">Custom label (optional)</div>
+      <input type="text" id="customLabel" placeholder="e.g. Charlie's football">
+      <label class="include-toggle">
+        <input type="checkbox" id="entryIncludeOther">
+        <span id="entryIncludeLabel">Include on shared calendar</span>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="cancelAddBtn">Cancel</button>
+        <button class="btn btn-primary" id="addEntryBtn">Add entry</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:20px;">
+      <button class="btn btn-ghost" id="closeDayBtn" style="width:100%;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fixture detail sheet -->
+<div class="backdrop" id="fixtureDetailBackdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="fixtureDetailTitle">Entry</h2>
+    <div class="sub" id="fixtureDetailDate">Date</div>
+    <div class="field-label" style="margin-top:16px;">Time (optional)</div>
+    <div class="row2">
+      <div><div class="sub" style="margin-bottom:6px;">Start</div><input type="time" id="fixtureDetailKickoff"></div>
+      <div><div class="sub" style="margin-bottom:6px;">End</div><input type="time" id="fixtureDetailEnd"></div>
+    </div>
+    <div class="field-label">Location / meeting point</div>
+    <input type="text" id="fixtureDetailAddress" placeholder="e.g. Newbury FC, Faraday Road, RG14 2AD">
+    <div class="field-label">Notes (optional)</div>
+    <textarea id="fixtureDetailNotes" placeholder="Any other details"></textarea>
+    <label class="include-toggle" id="fixtureDetailIncludeRow">
+      <input type="checkbox" id="fixtureDetailInclude">
+      <span id="fixtureDetailIncludeLabel">Include on shared calendar</span>
+    </label>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="fixtureDetailDirectionsBtn">📍 Maps</button>
+      <button class="btn btn-ghost" id="fixtureDetailShareBtn">Share</button>
+    </div>
+    <button class="btn btn-primary" id="fixtureDetailSaveBtn" style="width:100%;margin-top:10px;">Save</button>
+    <button class="btn btn-ghost" id="fixtureDetailCloseBtn" style="width:100%;margin-top:10px;">Close</button>
+  </div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDLn8nnxLSfTuXok60f7TXl2fGh68BHjDE",
+  authDomain: "household-planner-14cf5.firebaseapp.com",
+  projectId: "household-planner-14cf5",
+  storageBucket: "household-planner-14cf5.firebasestorage.app",
+  messagingSenderId: "84065626640",
+  appId: "1:84065626640:web:049b4c43a40bdc9fc6b895",
+  measurementId: "G-Z76BMXEFGM"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const PLANNER_DOC = doc(db, 'planner', 'household');
+
+const BASE_TYPES = [
+  {id:'day', label:'Day shift', color:'var(--day)', hex:'#F0A857', bg:'rgba(240,168,87,0.22)'},
+  {id:'night', label:'Night shift', color:'var(--night)', hex:'#5C8CF0', bg:'rgba(92,140,240,0.22)'},
+  {id:'evening', label:'Evening shift', color:'var(--evening)', hex:'#B98CE8', bg:'rgba(185,140,232,0.22)'},
+  {id:'overtime', label:'Overtime', color:'var(--overtime)', hex:'#EE6B63', bg:'rgba(238,107,99,0.22)'},
+  {id:'holiday', label:'Holiday', color:'var(--holiday)', hex:'#48C793', bg:'rgba(72,199,147,0.22)'},
+  {id:'off', label:'Off', color:'var(--off)', hex:'#78829A', bg:'rgba(120,130,150,0.20)'},
+  {id:'event', label:'Event', color:'var(--event)', hex:'#F17DA8', bg:'rgba(241,125,168,0.20)'},
+  {id:'football', label:"Charlie's Football", color:'var(--football)', hex:'#42C9BB', bg:'rgba(66,201,187,0.18)'},
+  {id:'district', label:"Stevenage District", color:'var(--district)', hex:'#4FA8E8', bg:'rgba(79,168,232,0.18)'},
+];
+// Order in which entry types "win" the whole-cell background colour when a day has more than one
+const BASE_BG_PRIORITY = ['day','night','evening','overtime','holiday','off','event','football','district'];
+
+function hexToRgba(hex, alpha){
+  hex = hex.replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.substring(0,2),16);
+  const g = parseInt(hex.substring(2,4),16);
+  const b = parseInt(hex.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function allTypes(){
+  const merged = BASE_TYPES.map(t=>{
+    const ov = store.typeOverrides && store.typeOverrides[t.id];
+    return ov ? {...t, color: ov.color, hex: ov.color, bg: ov.bg} : t;
+  });
+  return [...merged, ...(store.customTypes || [])];
+}
+function personalTypes(){
+  return allTypes().filter(t => t.id !== 'football' && t.id !== 'district');
+}
+function bgPriorityOrder(){
+  return [...BASE_BG_PRIORITY, ...(store.customTypes || []).map(t=>t.id)];
+}
+
+const FOOTBALL_FIXTURES = [
+  {date:'2026-09-06', opponent:'Luton Town', venue:'A'},
+  {date:'2026-09-13', opponent:'Gillingham', venue:'H'},
+  {date:'2026-09-20', opponent:'Watford', venue:'H'},
+  {date:'2026-09-27', opponent:'Portsmouth', venue:'A'},
+  {date:'2026-10-04', opponent:'AFC Wimbledon', venue:'A'},
+  {date:'2026-10-18', opponent:'Mansfield Town', venue:'H'},
+  {date:'2026-10-25', opponent:'Leyton Orient', venue:'H'},
+  {date:'2026-11-29', opponent:'Cambridge United', venue:'H'},
+  {date:'2026-12-06', opponent:'Stevenage', venue:'A'},
+  {date:'2026-12-13', opponent:'Northampton Town', venue:'H'},
+  {date:'2027-01-10', opponent:'Luton Town', venue:'H'},
+  {date:'2027-01-17', opponent:'Notts County', venue:'A'},
+  {date:'2027-01-24', opponent:'Gillingham', venue:'A'},
+  {date:'2027-01-31', opponent:'Exeter City', venue:'N'},
+  {date:'2027-02-14', opponent:'Watford', venue:'A'},
+  {date:'2027-02-21', opponent:'Portsmouth', venue:'H'},
+  {date:'2027-02-28', opponent:'AFC Wimbledon', venue:'H'},
+  {date:'2027-03-14', opponent:'Leyton Orient', venue:'A'},
+  {date:'2027-03-21', opponent:'Burton Albion', venue:'H'},
+  {date:'2027-04-04', opponent:'Cambridge United', venue:'A'},
+  {date:'2027-04-18', opponent:'Leyton Orient', venue:'H'},
+  {date:'2027-04-25', opponent:'Stevenage', venue:'H'},
+  {date:'2027-05-02', opponent:'Northampton Town', venue:'A'},
+];
+
+const DISTRICT_FIXTURES = [
+  {date:'2026-09-12', opponent:"District Festival (various, tournament style)", venue:'N'},
+  {date:'2026-09-19', opponent:'Newbury', venue:'A'},
+  {date:'2026-09-26', opponent:'Slough', venue:'H'},
+  {date:'2026-10-03', opponent:'Gloucester', venue:'A'},
+  {date:'2026-10-17', opponent:'League Cup — tournament style @ Colney Heath', venue:'N'},
+  {date:'2026-11-14', opponent:"St Albans 'B' (Shires Cup 2nd Round)", venue:'H'},
+  {date:'2026-11-21', opponent:'Sutton (Southern Counties Cup 1st Round)', venue:'A'},
+  {date:'2026-12-05', opponent:'St Albans', venue:'H'},
+  {date:'2026-12-12', opponent:'7-a-side Cup — tournament style, venue TBD', venue:'N'},
+  {date:'2027-01-16', opponent:'Dacorum', venue:'A'},
+  {date:'2027-01-30', opponent:'Swindon', venue:'H'},
+  {date:'2027-02-06', opponent:'Wycombe', venue:'A'},
+  {date:'2027-02-27', opponent:"Shires Cup 3rd Round — opponent TBC", venue:'N'},
+  {date:'2027-03-06', opponent:"Southern Counties Cup 2nd Round — opponent TBC", venue:'N'},
+  {date:'2027-03-13', opponent:'Woking', venue:'A'},
+  {date:'2027-03-20', opponent:'Reigate & Bumstead', venue:'H'},
+  {date:'2027-04-17', opponent:'7-a-side Cup Finals — venue TBC', venue:'N'},
+  {date:'2027-04-24', opponent:'League Cup Finals — venue TBC', venue:'N'},
+  {date:'2027-05-08', opponent:'Shires Cup Finals Day — Oxford City FC Stadium', venue:'N'},
+  {date:'2027-05-15', opponent:'Southern Counties Cup Finals Day — Oxford City FC Stadium', venue:'N'},
+];
+
+const PROFILES = ['Matty', 'Nicola'];
+
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, pin:'2015' };
+let activeProfile = 'Matty';
+let currentTabName = 'calendar';
+let viewYear, viewMonth;
+let activeDate = null;
+let selectedType = null;
+let selectedRepeatType = null;
+let firstSnapshotReceived = false;
+let localSaveInFlight = false;
+
+function personalStore(){ return store[activeProfile]; }
+function otherProfile(){ return PROFILES.find(p => p !== activeProfile) || PROFILES[0]; }
+
+function applyRawStore(raw){
+  if(raw && (raw.Matty || raw.Nicola || raw.shared || raw.customTypes || raw.typeOverrides || raw.pin)){
+    store = {
+      Matty: raw.Matty || {}, Nicola: raw.Nicola || {}, shared: raw.shared || {},
+      customTypes: raw.customTypes || [], typeOverrides: raw.typeOverrides || {},
+      pin: raw.pin || '2015'
+    };
+  }
+}
+
+function refreshWholeApp(){
+  populateTypeSelect();
+  renderLegend();
+  renderCalendar();
+  if(currentTabName === 'overtime') renderOvertimeList();
+  if(currentTabName === 'fixtures') renderFixtureList();
+  if(currentTabName === 'district') renderDistrictList();
+  const typesPanel = document.getElementById('typesPanel');
+  if(typesPanel && typesPanel.style.display === 'block') renderTypesList();
+}
+
+async function loadData(){
+  try{
+    const snap = await getDoc(PLANNER_DOC);
+    if(snap.exists()) applyRawStore(snap.data());
+  }catch(e){ console.error('Load failed', e); }
+}
+async function saveData(){
+  try{
+    localSaveInFlight = true;
+    await setDoc(PLANNER_DOC, store);
+  }catch(e){
+    console.error('Could not save', e);
+  }finally{
+    localSaveInFlight = false;
+  }
+}
+
+// Live sync — when Nicola (or Matty on another device) changes something,
+// this fires automatically and the screen updates without needing a refresh.
+onSnapshot(PLANNER_DOC, (snap)=>{
+  if(!snap.exists()) return;
+  applyRawStore(snap.data());
+  if(!firstSnapshotReceived){
+    firstSnapshotReceived = true;
+    return; // initial load is handled by init() itself
+  }
+  if(!localSaveInFlight) refreshWholeApp();
+}, (err)=>{ console.error('Live sync error', err); });
+
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+function typeById(id){ return allTypes().find(t=>t.id===id); }
+
+const DEFAULT_TIMES = {
+  day: {start:'07:00', end:'17:00'},
+  night: {start:'19:00', end:'07:00'},
+  evening: {start:'13:00', end:'23:00'},
+};
+
+function entryDisplayLabel(e){
+  const t = typeById(e.typeId);
+  const base = e.label || (t ? t.label : 'Event');
+  if(e.start && e.end) return `${base} · ${e.start}–${e.end}`;
+  if(e.start) return `${base} · from ${e.start}`;
+  return base;
+}
+
+function directionsLink(address){
+  if(!address) return '';
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(address);
+  return `<a href="${url}" target="_blank" rel="noopener" class="directions-link">📍 Directions</a>`;
+}
+
+let activeEntryRef = null; // {scope: 'shared'|'personal', date, idx}
+
+function getEntryStore(scope){
+  return scope === 'shared' ? store.shared : personalStore();
+}
+
+function openEntryDetail(scope, date, idx){
+  const arr = getEntryStore(scope)[date];
+  const entry = arr && arr[idx];
+  if(!entry) return;
+  activeEntryRef = { scope, date, idx };
+  const t = typeById(entry.typeId);
+  const d = new Date(date + 'T00:00:00');
+  document.getElementById('fixtureDetailTitle').textContent = entry.label || (t ? t.label : 'Entry');
+  document.getElementById('fixtureDetailDate').textContent = d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('fixtureDetailKickoff').value = entry.start || '';
+  document.getElementById('fixtureDetailEnd').value = entry.end || '';
+  document.getElementById('fixtureDetailAddress').value = entry.address || '';
+  document.getElementById('fixtureDetailNotes').value = entry.notes || '';
+  const includeRow = document.getElementById('fixtureDetailIncludeRow');
+  if(scope === 'personal'){
+    includeRow.style.display = 'flex';
+    document.getElementById('fixtureDetailIncludeLabel').textContent = `Include ${otherProfile()} on this`;
+    document.getElementById('fixtureDetailInclude').checked = !!entry.shared;
+  }else{
+    includeRow.style.display = 'none';
+  }
+  document.getElementById('fixtureDetailBackdrop').classList.add('show');
+}
+
+function refreshAfterEntryChange(){
+  renderCalendar();
+  if(activeDate) renderDayEntries();
+  if(currentTabName === 'fixtures') renderFixtureList();
+  if(currentTabName === 'district') renderDistrictList();
+  if(currentTabName === 'overtime') renderOvertimeList();
+}
+
+document.getElementById('fixtureDetailSaveBtn').addEventListener('click', ()=>{
+  if(!activeEntryRef) return;
+  const entry = getEntryStore(activeEntryRef.scope)[activeEntryRef.date][activeEntryRef.idx];
+  entry.start = document.getElementById('fixtureDetailKickoff').value || null;
+  entry.end = document.getElementById('fixtureDetailEnd').value || null;
+  entry.address = document.getElementById('fixtureDetailAddress').value.trim() || null;
+  entry.notes = document.getElementById('fixtureDetailNotes').value.trim() || null;
+  if(activeEntryRef.scope === 'personal'){
+    entry.shared = document.getElementById('fixtureDetailInclude').checked;
+  }
+  saveData();
+  document.getElementById('fixtureDetailBackdrop').classList.remove('show');
+  refreshAfterEntryChange();
+});
+
+document.getElementById('fixtureDetailDirectionsBtn').addEventListener('click', ()=>{
+  const address = document.getElementById('fixtureDetailAddress').value.trim();
+  if(!address){ alert('Add a location first'); return; }
+  window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(address), '_blank');
+});
+
+document.getElementById('fixtureDetailShareBtn').addEventListener('click', async ()=>{
+  if(!activeEntryRef) return;
+  const entry = getEntryStore(activeEntryRef.scope)[activeEntryRef.date][activeEntryRef.idx];
+  const t = typeById(entry.typeId);
+  const d = new Date(activeEntryRef.date + 'T00:00:00');
+  const dateStr = d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  const title = entry.label || (t ? t.label : 'Event');
+  let text = `${title}\n📅 ${dateStr}`;
+  const kickoff = document.getElementById('fixtureDetailKickoff').value;
+  const end = document.getElementById('fixtureDetailEnd').value;
+  const address = document.getElementById('fixtureDetailAddress').value.trim();
+  const notes = document.getElementById('fixtureDetailNotes').value.trim();
+  if(kickoff) text += `\n🕐 ${kickoff}${end ? '–'+end : ''}`;
+  if(address) text += `\n📍 ${address}`;
+  if(notes) text += `\n${notes}`;
+  if(address) text += `\nDirections: https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+
+  if(navigator.share){
+    try{ await navigator.share({ title, text }); }catch(e){ /* cancelled — fine */ }
+  }else if(navigator.clipboard){
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('Details copied — paste them into WhatsApp or a text message.');
+    }catch(e){
+      alert(text);
+    }
+  }else{
+    alert(text);
+  }
+});
+
+document.getElementById('fixtureDetailCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('fixtureDetailBackdrop').classList.remove('show');
+});
+document.getElementById('fixtureDetailBackdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='fixtureDetailBackdrop') document.getElementById('fixtureDetailBackdrop').classList.remove('show');
+});
+
+function entriesForDate(key){
+  const mine = personalStore()[key] || [];
+  const includedFromOther = (store[otherProfile()][key] || []).filter(e => e.shared);
+  return [...mine, ...includedFromOther, ...(store.shared[key] || [])];
+}
+
+function seedFixtureList(list, typeId){
+  let changed = false;
+  list.forEach(fx=>{
+    const venueLabel = fx.venue==='H' ? '(H)' : fx.venue==='A' ? '(A)' : '(Neutral)';
+    const label = `vs ${fx.opponent} ${venueLabel}`;
+    if(!store.shared[fx.date]) store.shared[fx.date] = [];
+    const already = store.shared[fx.date].some(e => e.typeId===typeId && e.label===label);
+    if(!already){ store.shared[fx.date].push({typeId, label}); changed = true; }
+  });
+  if(changed) saveData();
+}
+
+function renderLegend(){
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  allTypes().forEach(t=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}`;
+    el.appendChild(chip);
+  });
+}
+
+function renderCalendar(){
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('monthLabel').innerHTML = `${monthNames[viewMonth]} <span class="yr">${viewYear}</span>`;
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  let startOffset = firstDay.getDay() - 1;
+  if(startOffset < 0) startOffset = 6;
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+
+  const today = new Date();
+  const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  for(let i=0;i<startOffset;i++){
+    const p = document.createElement('div');
+    p.className = 'day-cell pad';
+    grid.appendChild(p);
+  }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const key = dateKey(viewYear, viewMonth, d);
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (key===todayKey ? ' today' : '');
+    cell.addEventListener('click', ()=> openDaySheet(key));
+
+    const num = document.createElement('div');
+    num.className = 'day-num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    const entries = entriesForDate(key);
+    if(entries.length){
+      for(const pid of bgPriorityOrder()){
+        const found = entries.find(e => e.typeId === pid);
+        if(found){ cell.style.background = typeById(pid).bg; break; }
+      }
+      const dotsRow = document.createElement('div');
+      dotsRow.className = 'dots-row';
+      entries.slice(0,5).forEach(e=>{
+        const t = typeById(e.typeId);
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.background = t ? t.color : 'var(--event)';
+        dotsRow.appendChild(dot);
+      });
+      cell.appendChild(dotsRow);
+
+      const labelText = entries.map(e => entryDisplayLabel(e)).filter(Boolean).join(', ');
+      const lbl = document.createElement('div');
+      lbl.className = 'day-label';
+      lbl.textContent = labelText;
+      cell.appendChild(lbl);
+    }
+    grid.appendChild(cell);
+  }
+
+  renderTodayCard();
+}
+
+function renderTypeGrid(containerId, onSelect, types){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  (types || personalTypes()).forEach(t=>{
+    const opt = document.createElement('div');
+    opt.className = 'type-opt';
+    opt.innerHTML = `<span class="dot" style="background:${t.color}"></span><span>${t.label}</span>`;
+    opt.addEventListener('click', ()=>{
+      [...el.children].forEach(c=>c.classList.remove('selected'));
+      opt.classList.add('selected');
+      onSelect(t.id);
+    });
+    el.appendChild(opt);
+  });
+}
+
+function populateTypeSelect(){
+  const sel = document.getElementById('entryTypeSelect');
+  sel.innerHTML = '';
+  personalTypes().forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.label;
+    sel.appendChild(opt);
+  });
+}
+
+function applyEntryTypeDefaults(){
+  const id = document.getElementById('entryTypeSelect').value;
+  const dt = DEFAULT_TIMES[id];
+  document.getElementById('entryStart').value = dt ? dt.start : '';
+  document.getElementById('entryEnd').value = dt ? dt.end : '';
+}
+
+function resetAddEntryForm(){
+  document.getElementById('addEntryForm').style.display = 'none';
+  document.getElementById('showAddFormBtn').style.display = 'block';
+  document.getElementById('customLabel').value = '';
+  document.getElementById('entryStart').value = '';
+  document.getElementById('entryEnd').value = '';
+  document.getElementById('entryIncludeOther').checked = false;
+}
+
+function openDaySheet(key){
+  activeDate = key;
+  resetAddEntryForm();
+  const d = new Date(key + 'T00:00:00');
+  document.getElementById('dayTitle').textContent = d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  renderDayEntries();
+  document.getElementById('dayBackdrop').classList.add('show');
+}
+
+function renderDayEntries(){
+  const el = document.getElementById('dayEntries');
+  el.innerHTML = '';
+  const personal = personalStore()[activeDate] || [];
+  const shared = store.shared[activeDate] || [];
+  const other = otherProfile();
+  const fromOther = (store[other][activeDate] || []).filter(e => e.shared);
+  if(!personal.length && !shared.length && !fromOther.length){
+    el.innerHTML = '<span style="font-size:12.5px;color:var(--text-muted);">Nothing added yet</span>';
+    return;
+  }
+  personal.forEach((e, idx)=>{
+    const t = typeById(e.typeId);
+    const pill = document.createElement('div');
+    pill.className = 'tag-pill';
+    pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span><span class="pill-label" style="cursor:pointer;">${entryDisplayLabel(e)}</span><button data-idx="${idx}">×</button>`;
+    pill.querySelector('.pill-label').addEventListener('click', ()=> openEntryDetail('personal', activeDate, idx));
+    pill.querySelector('button').addEventListener('click', ()=>{
+      personalStore()[activeDate].splice(idx,1);
+      if(personalStore()[activeDate].length===0) delete personalStore()[activeDate];
+      saveData();
+      renderDayEntries();
+      renderCalendar();
+    });
+    el.appendChild(pill);
+  });
+  fromOther.forEach(e=>{
+    const t = typeById(e.typeId);
+    const pill = document.createElement('div');
+    pill.className = 'tag-pill';
+    pill.style.opacity = '0.8';
+    pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span>${entryDisplayLabel(e)} <span style="color:var(--text-muted);font-size:11px;">(${other})</span>`;
+    el.appendChild(pill);
+  });
+  shared.forEach((e, idx)=>{
+    const t = typeById(e.typeId);
+    const pill = document.createElement('div');
+    pill.className = 'tag-pill';
+    pill.style.cursor = 'pointer';
+    pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span>${entryDisplayLabel(e)}`;
+    pill.addEventListener('click', ()=> openEntryDetail('shared', activeDate, idx));
+    el.appendChild(pill);
+  });
+}
+
+document.getElementById('showAddFormBtn').addEventListener('click', ()=>{
+  document.getElementById('showAddFormBtn').style.display = 'none';
+  document.getElementById('addEntryForm').style.display = 'block';
+  document.getElementById('entryIncludeLabel').textContent = `Include ${otherProfile()} on this`;
+  applyEntryTypeDefaults();
+});
+document.getElementById('cancelAddBtn').addEventListener('click', ()=>{
+  resetAddEntryForm();
+});
+document.getElementById('entryTypeSelect').addEventListener('change', applyEntryTypeDefaults);
+
+document.getElementById('addEntryBtn').addEventListener('click', ()=>{
+  const selectedType = document.getElementById('entryTypeSelect').value;
+  const label = document.getElementById('customLabel').value.trim();
+  const start = document.getElementById('entryStart').value;
+  const end = document.getElementById('entryEnd').value;
+  const includeOther = document.getElementById('entryIncludeOther').checked;
+  if(!personalStore()[activeDate]) personalStore()[activeDate] = [];
+  personalStore()[activeDate].push({typeId: selectedType, label: label || null, start: start || null, end: end || null, shared: includeOther});
+  saveData();
+  renderDayEntries();
+  renderCalendar();
+  resetAddEntryForm();
+});
+document.getElementById('closeDayBtn').addEventListener('click', ()=>{
+  document.getElementById('dayBackdrop').classList.remove('show');
+});
+document.getElementById('dayBackdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='dayBackdrop') document.getElementById('dayBackdrop').classList.remove('show');
+});
+
+let selectedClearType = null;
+
+function initRepeatDefaults(){
+  selectedRepeatType = null;
+  renderTypeGrid('repeatTypeGrid', (id)=>{
+    selectedRepeatType = id;
+    const dt = DEFAULT_TIMES[id];
+    document.getElementById('repeatTimeStart').value = dt ? dt.start : '';
+    document.getElementById('repeatTimeEnd').value = dt ? dt.end : '';
+  });
+  const today = new Date();
+  document.getElementById('repeatStart').value = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+  const in90 = new Date(today.getTime() + 90*24*3600*1000);
+  document.getElementById('repeatEnd').value = dateKey(in90.getFullYear(), in90.getMonth(), in90.getDate());
+  document.getElementById('daysOn').value = 4;
+  document.getElementById('daysOff').value = 4;
+  document.getElementById('repeatTimeStart').value = '';
+  document.getElementById('repeatTimeEnd').value = '';
+  document.getElementById('repeatStatus').textContent = '';
+
+  selectedClearType = null;
+  renderTypeGrid('clearTypeGrid', (id)=>{ selectedClearType = id; });
+  document.getElementById('clearStart').value = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+  document.getElementById('clearEnd').value = dateKey(in90.getFullYear(), in90.getMonth(), in90.getDate());
+  document.getElementById('clearStatus').textContent = '';
+}
+document.getElementById('applyRepeatBtn').addEventListener('click', ()=>{
+  if(!selectedRepeatType){ alert('Pick a shift type first'); return; }
+  const start = document.getElementById('repeatStart').value;
+  const end = document.getElementById('repeatEnd').value;
+  const on = parseInt(document.getElementById('daysOn').value, 10) || 1;
+  const off = parseInt(document.getElementById('daysOff').value, 10) || 0;
+  const tStart = document.getElementById('repeatTimeStart').value || null;
+  const tEnd = document.getElementById('repeatTimeEnd').value || null;
+  if(!start || !end){ alert('Pick both dates'); return; }
+  let cur = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  const cycle = on + off;
+  let i = 0, count = 0;
+  while(cur <= endDate){
+    if((i % cycle) < on){
+      const key = dateKey(cur.getFullYear(), cur.getMonth(), cur.getDate());
+      if(!personalStore()[key]) personalStore()[key] = [];
+      const dup = personalStore()[key].some(e=>e.typeId===selectedRepeatType && !e.label && e.start===tStart && e.end===tEnd);
+      if(!dup){
+        personalStore()[key].push({typeId: selectedRepeatType, label:null, start:tStart, end:tEnd});
+        count++;
+      }
+    }
+    cur.setDate(cur.getDate()+1);
+    i++;
+  }
+  saveData();
+  renderCalendar();
+  document.getElementById('repeatStatus').textContent = `Added ${count} day${count===1?'':'s'} to the calendar.`;
+});
+
+document.getElementById('clearRangeBtn').addEventListener('click', ()=>{
+  if(!selectedClearType){ alert('Pick a shift type first'); return; }
+  const start = document.getElementById('clearStart').value;
+  const end = document.getElementById('clearEnd').value;
+  if(!start || !end){ alert('Pick both dates'); return; }
+  let cur = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  let removed = 0;
+  while(cur <= endDate){
+    const key = dateKey(cur.getFullYear(), cur.getMonth(), cur.getDate());
+    if(personalStore()[key]){
+      const before = personalStore()[key].length;
+      personalStore()[key] = personalStore()[key].filter(e => e.typeId !== selectedClearType);
+      removed += before - personalStore()[key].length;
+      if(personalStore()[key].length === 0) delete personalStore()[key];
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  saveData();
+  renderCalendar();
+  document.getElementById('clearStatus').textContent = `Removed ${removed} entr${removed===1?'y':'ies'} from that range.`;
+});
+
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  viewMonth--; if(viewMonth<0){ viewMonth=11; viewYear--; } renderCalendar();
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  viewMonth++; if(viewMonth>11){ viewMonth=0; viewYear++; } renderCalendar();
+});
+document.getElementById('todayBtn').addEventListener('click', ()=>{
+  const t = new Date(); viewYear = t.getFullYear(); viewMonth = t.getMonth(); renderCalendar();
+});
+
+// ---- Overtime tab ----
+document.getElementById('otAddBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('otDate').value;
+  const start = document.getElementById('otStart').value;
+  const end = document.getElementById('otEnd').value;
+  const note = document.getElementById('otNote').value.trim();
+  if(!dateStr){ alert('Pick a date'); return; }
+  if(!personalStore()[dateStr]) personalStore()[dateStr] = [];
+  personalStore()[dateStr].push({typeId:'overtime', label: note || null, start: start || null, end: end || null});
+  saveData();
+  document.getElementById('otNote').value = '';
+  document.getElementById('otStart').value = '';
+  document.getElementById('otEnd').value = '';
+  renderOvertimeList();
+  renderCalendar();
+});
+
+const TAB_BTNS = {
+  calendar: document.getElementById('tabCalendarBtn'),
+  repeat: document.getElementById('tabRepeatBtn'),
+  overtime: document.getElementById('tabOvertimeBtn'),
+  fixtures: document.getElementById('tabFixturesBtn'),
+  district: document.getElementById('tabDistrictBtn'),
+  types: document.getElementById('tabTypesBtn'),
+};
+const TAB_VIEWS = {
+  calendar: document.getElementById('calendarView'),
+  repeat: document.getElementById('repeatView'),
+  overtime: document.getElementById('overtimeView'),
+  fixtures: document.getElementById('fixturesView'),
+  district: document.getElementById('districtView'),
+  types: document.getElementById('typesView'),
+};
+function showTab(name){
+  currentTabName = name;
+  Object.keys(TAB_BTNS).forEach(key=>{
+    TAB_BTNS[key].classList.toggle('active', key===name);
+    TAB_VIEWS[key].style.display = (key===name) ? 'block' : 'none';
+  });
+  if(name==='calendar') TAB_VIEWS.calendar.style.display = '';
+  if(name==='repeat') initRepeatDefaults();
+  if(name==='overtime') renderOvertimeList();
+  if(name==='fixtures') renderFixtureList();
+  if(name==='district') renderDistrictList();
+  if(name==='types') document.getElementById('typesPanel').style.display = 'none';
+}
+TAB_BTNS.calendar.addEventListener('click', ()=>showTab('calendar'));
+TAB_BTNS.repeat.addEventListener('click', ()=>showTab('repeat'));
+TAB_BTNS.overtime.addEventListener('click', ()=>showTab('overtime'));
+TAB_BTNS.fixtures.addEventListener('click', ()=>showTab('fixtures'));
+TAB_BTNS.district.addEventListener('click', ()=>showTab('district'));
+TAB_BTNS.types.addEventListener('click', ()=>showTab('types'));
+
+document.getElementById('brandHomeBtn').addEventListener('click', ()=>{
+  document.getElementById('dayBackdrop').classList.remove('show');
+  document.getElementById('fixtureDetailBackdrop').classList.remove('show');
+  showTab('calendar');
+});
+
+document.getElementById('toggleTypesPanelBtn').addEventListener('click', ()=>{
+  document.getElementById('typesPanel').style.display = 'block';
+  renderTypesList();
+});
+document.getElementById('doneTypesBtn').addEventListener('click', ()=>{
+  document.getElementById('typesPanel').style.display = 'none';
+});
+
+function renderTypesList(){
+  const el = document.getElementById('typesList');
+  el.innerHTML = '';
+  allTypes().forEach(t=>{
+    const isCustom = (store.customTypes || []).some(ct=>ct.id===t.id);
+    const row = document.createElement('div');
+    row.className = 'fx-row';
+    row.innerHTML = `<input type="color" class="type-swatch" data-type-id="${t.id}" value="${t.hex || '#D8B679'}"><span class="fx-info">${t.label}</span>${isCustom ? `<button class="type-delete" data-type-id="${t.id}">×</button>` : ''}`;
+    el.appendChild(row);
+  });
+}
+document.getElementById('typesList').addEventListener('change', (e)=>{
+  if(!e.target.classList.contains('type-swatch')) return;
+  const id = e.target.dataset.typeId;
+  const hex = e.target.value;
+  const bg = hexToRgba(hex, 0.22);
+  const custom = (store.customTypes || []).find(t=>t.id===id);
+  if(custom){
+    custom.color = hex; custom.hex = hex; custom.bg = bg;
+  }else{
+    if(!store.typeOverrides) store.typeOverrides = {};
+    store.typeOverrides[id] = { color: hex, bg };
+  }
+  saveData();
+  renderLegend();
+  renderCalendar();
+  if(activeDate) renderDayEntries();
+});
+document.getElementById('typesList').addEventListener('click', (e)=>{
+  if(!e.target.classList.contains('type-delete')) return;
+  const id = e.target.dataset.typeId;
+  const t = (store.customTypes || []).find(x=>x.id===id);
+  if(!t) return;
+  if(!confirm(`Remove "${t.label}"? Entries already using it will show as a generic event.`)) return;
+  store.customTypes = store.customTypes.filter(x=>x.id!==id);
+  saveData();
+  renderTypesList();
+  renderLegend();
+  populateTypeSelect();
+  renderCalendar();
+});
+
+document.getElementById('addTypeBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('newTypeName').value.trim();
+  const hex = document.getElementById('newTypeColor').value;
+  if(!name){ alert('Give the new type a name'); return; }
+  let id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  if(!id) id = 'type';
+  if(!store.customTypes) store.customTypes = [];
+  let uniqueId = id, n = 2;
+  while(allTypes().some(t=>t.id===uniqueId)){ uniqueId = `${id}-${n}`; n++; }
+  store.customTypes.push({ id: uniqueId, label: name, color: hex, hex, bg: hexToRgba(hex, 0.2) });
+  saveData();
+  document.getElementById('newTypeName').value = '';
+  document.getElementById('newTypeColor').value = '#D8B679';
+  renderTypesList();
+  renderLegend();
+  populateTypeSelect();
+});
+
+function renderProfileTabs(){
+  const el = document.getElementById('profileTabs');
+  el.innerHTML = '';
+  PROFILES.forEach(name=>{
+    const btn = document.createElement('button');
+    btn.className = 'profile-pill' + (name===activeProfile ? ' active' : '');
+    btn.textContent = name;
+    btn.addEventListener('click', ()=>{
+      if(activeProfile === name) return;
+      activeProfile = name;
+      renderProfileTabs();
+      renderCalendar();
+      if(currentTabName === 'overtime') renderOvertimeList();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function renderTodayCard(){
+  const t = new Date();
+  const key = dateKey(t.getFullYear(), t.getMonth(), t.getDate());
+  document.getElementById('todayDateLabel').textContent =
+    t.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  const list = document.getElementById('todayList');
+  const entries = entriesForDate(key);
+  if(!entries.length){
+    list.innerHTML = '<li class="td-empty">Nothing added for today yet.</li>';
+    return;
+  }
+  list.innerHTML = '';
+  entries.forEach(e=>{
+    const t2 = typeById(e.typeId);
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="dot" style="background:${t2?t2.color:'var(--event)'}"></span>${entryDisplayLabel(e)} ${directionsLink(e.address)}`;
+    list.appendChild(li);
+  });
+}
+
+function allEntriesOfType(typeId, sourceObj){
+  const list = [];
+  Object.keys(sourceObj).forEach(dk=>{
+    (sourceObj[dk]||[]).forEach((e, idx)=>{ if(e.typeId === typeId) list.push({date:dk, idx, entry:e}); });
+  });
+  list.sort((a,b)=> a.date.localeCompare(b.date));
+  return list;
+}
+function renderListInto(containerId, typeId, sourceObj, scope, afterDelete){
+  const el = document.getElementById(containerId);
+  const entries = allEntriesOfType(typeId, sourceObj);
+  if(!entries.length){ el.innerHTML = '<div class="fx-empty">Nothing added yet.</div>'; return; }
+  el.innerHTML = '';
+  entries.forEach(en=>{
+    const d = new Date(en.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'});
+    const row = document.createElement('div');
+    row.className = 'fx-row';
+    row.innerHTML = `<span class="fx-date">${dateStr}</span><span class="fx-info" style="cursor:pointer;">${entryDisplayLabel(en.entry)}</span><button>×</button>`;
+    row.querySelector('.fx-info').addEventListener('click', ()=> openEntryDetail(scope, en.date, en.idx));
+    row.querySelector('button').addEventListener('click', ()=>{
+      const arr = sourceObj[en.date] || [];
+      arr.splice(en.idx,1);
+      if(arr.length===0) delete sourceObj[en.date];
+      saveData();
+      afterDelete();
+      renderCalendar();
+    });
+    el.appendChild(row);
+  });
+}
+function renderFixtureList(){ renderListInto('fxList', 'football', store.shared, 'shared', renderFixtureList); }
+function renderDistrictList(){ renderListInto('districtList', 'district', store.shared, 'shared', renderDistrictList); }
+function renderOvertimeList(){ renderListInto('otList', 'overtime', personalStore(), 'personal', renderOvertimeList); }
+
+function addFixtureOfType(dateStr, opponent, venue, typeId, kickoff, address){
+  const venueLabel = venue==='H' ? '(H)' : venue==='A' ? '(A)' : '(Neutral)';
+  const label = `vs ${opponent} ${venueLabel}`;
+  if(!store.shared[dateStr]) store.shared[dateStr] = [];
+  const existing = store.shared[dateStr].find(e=>e.typeId===typeId && e.label===label);
+  if(existing){
+    let changed = false;
+    if(kickoff && !existing.start){ existing.start = kickoff; changed = true; }
+    if(address && !existing.address){ existing.address = address; changed = true; }
+    if(changed) saveData();
+    return changed;
+  }
+  store.shared[dateStr].push({typeId, label, start: kickoff || null, address: address || null});
+  saveData();
+  return true;
+}
+document.getElementById('fxAddBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('fxDate').value;
+  const opponent = document.getElementById('fxOpponent').value.trim();
+  const venue = document.getElementById('fxVenue').value;
+  const kickoff = document.getElementById('fxKickoff').value;
+  const address = document.getElementById('fxAddress').value.trim();
+  if(!dateStr || !opponent){ alert('Add a date and opponent'); return; }
+  addFixtureOfType(dateStr, opponent, venue, 'football', kickoff, address);
+  document.getElementById('fxOpponent').value = '';
+  document.getElementById('fxKickoff').value = '';
+  document.getElementById('fxAddress').value = '';
+  renderFixtureList(); renderCalendar();
+});
+document.getElementById('districtAddBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('districtDate').value;
+  const opponent = document.getElementById('districtOpponent').value.trim();
+  const venue = document.getElementById('districtVenue').value;
+  const kickoff = document.getElementById('districtKickoff').value;
+  const address = document.getElementById('districtAddress').value.trim();
+  if(!dateStr || !opponent){ alert('Add a date and opponent'); return; }
+  addFixtureOfType(dateStr, opponent, venue, 'district', kickoff, address);
+  document.getElementById('districtOpponent').value = '';
+  document.getElementById('districtKickoff').value = '';
+  document.getElementById('districtAddress').value = '';
+  renderDistrictList(); renderCalendar();
+});
+
+function wireImportSection(prefix, typeId){
+  const rawText = document.getElementById(prefix+'RawText');
+  const parseBtn = document.getElementById(prefix+'ParseBtn');
+  const statusEl = document.getElementById(prefix+'ParseStatus');
+  const previewList = document.getElementById(prefix+'PreviewList');
+  const addSelectedBtn = document.getElementById(prefix+'AddSelectedBtn');
+  let parsed = [];
+
+  parseBtn.addEventListener('click', ()=>{
+    const text = rawText.value;
+    const months = 'January|February|March|April|May|June|July|August|September|October|November|December';
+    const re = new RegExp(`(\\d{1,2})\\s+(${months})\\s+(\\d{4})\\s+([A-Za-z][A-Za-z .'\\-]*?)\\s+([HAN])\\b`, 'g');
+    const monthIdx = {January:0,February:1,March:2,April:3,May:4,June:5,July:6,August:7,September:8,October:9,November:10,December:11};
+    parsed = [];
+    let m;
+    while((m = re.exec(text)) !== null){
+      const day = parseInt(m[1],10);
+      const month = monthIdx[m[2]];
+      const year = parseInt(m[3],10);
+      const opponent = m[4].trim().replace(/\s+/g,' ');
+      const venue = m[5];
+      if(!opponent || /free week|futsal|qualifying|finals/i.test(opponent)) continue;
+      parsed.push({date:`${year}-${pad(month+1)}-${pad(day)}`, opponent, venue});
+    }
+    renderPreview();
+    statusEl.textContent = parsed.length
+      ? `Found ${parsed.length} possible fixture${parsed.length===1?'':'s'} — untick any that are wrong, then add them.`
+      : 'No fixtures recognised in that text. You can add them manually above instead.';
+  });
+
+  function renderPreview(){
+    previewList.innerHTML = '';
+    if(!parsed.length){ addSelectedBtn.style.display = 'none'; return; }
+    parsed.forEach((fx, idx)=>{
+      const d = new Date(fx.date + 'T00:00:00');
+      const dateStr = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+      const venueLabel = fx.venue==='H' ? 'Home' : fx.venue==='A' ? 'Away' : 'Neutral';
+      const row = document.createElement('label');
+      row.className = 'preview-item';
+      row.innerHTML = `<input type="checkbox" checked data-idx="${idx}"><span>${dateStr} — vs ${fx.opponent} (${venueLabel})</span>`;
+      previewList.appendChild(row);
+    });
+    addSelectedBtn.style.display = 'block';
+  }
+
+  addSelectedBtn.addEventListener('click', ()=>{
+    const checked = [...previewList.querySelectorAll('input[type=checkbox]:checked')];
+    let count = 0;
+    checked.forEach(cb=>{
+      const fx = parsed[parseInt(cb.dataset.idx,10)];
+      if(fx && addFixtureOfType(fx.date, fx.opponent, fx.venue, typeId)) count++;
+    });
+    statusEl.textContent = `Added ${count} fixture${count===1?'':'s'} to the calendar.`;
+    previewList.innerHTML = '';
+    addSelectedBtn.style.display = 'none';
+    rawText.value = '';
+    parsed = [];
+    if(typeId==='football') renderFixtureList(); else renderDistrictList();
+    renderCalendar();
+  });
+}
+wireImportSection('fx', 'football');
+wireImportSection('district', 'district');
+
+async function init(){
+  await loadData();
+  document.getElementById('shareNote').innerHTML =
+    'Live — shared with Nicola in real time. Anything either of you adds shows up on both phones instantly.';
+  seedFixtureList(FOOTBALL_FIXTURES, 'football');
+  seedFixtureList(DISTRICT_FIXTURES, 'district');
+  populateTypeSelect();
+  renderProfileTabs();
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  renderLegend();
+  renderCalendar();
+}
+init();
+
+// ---- Backup ----
+document.getElementById('backupBtn').addEventListener('click', ()=>{
+  const payload = JSON.stringify(store, null, 2);
+  const blob = new Blob([payload], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  a.href = url;
+  a.download = `household-planner-backup-${dateKey(now.getFullYear(), now.getMonth(), now.getDate())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+
+// ---- PIN lock ----
+function attemptUnlock(){
+  const input = document.getElementById('pinInput');
+  if(input.value === (store.pin || '2015')){
+    localStorage.setItem('planner-unlocked', 'true');
+    document.getElementById('lockScreen').classList.add('hidden');
+  }else{
+    document.getElementById('pinError').style.display = 'block';
+    input.value = '';
+  }
+}
+document.getElementById('pinSubmitBtn').addEventListener('click', attemptUnlock);
+document.getElementById('pinInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') attemptUnlock(); });
+if(localStorage.getItem('planner-unlocked') === 'true'){
+  document.getElementById('lockScreen').classList.add('hidden');
+}
+
+// ---- Change code ----
+document.getElementById('toggleCodePanelBtn').addEventListener('click', ()=>{
+  document.getElementById('codePanel').style.display = 'block';
+  document.getElementById('currentCodeInput').value = '';
+  document.getElementById('newCodeInput').value = '';
+  document.getElementById('confirmCodeInput').value = '';
+  document.getElementById('codeStatus').textContent = '';
+});
+document.getElementById('doneCodeBtn').addEventListener('click', ()=>{
+  document.getElementById('codePanel').style.display = 'none';
+});
+document.getElementById('saveCodeBtn').addEventListener('click', ()=>{
+  const current = document.getElementById('currentCodeInput').value;
+  const next = document.getElementById('newCodeInput').value;
+  const confirmNext = document.getElementById('confirmCodeInput').value;
+  const statusEl = document.getElementById('codeStatus');
+  if(current !== (store.pin || '2015')){
+    statusEl.style.color = 'var(--overtime)';
+    statusEl.textContent = 'Current code is wrong.';
+    return;
+  }
+  if(!/^\d{4}$/.test(next)){
+    statusEl.style.color = 'var(--overtime)';
+    statusEl.textContent = 'New code must be exactly 4 digits.';
+    return;
+  }
+  if(next !== confirmNext){
+    statusEl.style.color = 'var(--overtime)';
+    statusEl.textContent = "New codes don't match.";
+    return;
+  }
+  store.pin = next;
+  saveData();
+  statusEl.style.color = 'var(--gold)';
+  statusEl.textContent = 'Code updated. Any device that isn\'t already unlocked will need the new code.';
+  document.getElementById('currentCodeInput').value = '';
+  document.getElementById('newCodeInput').value = '';
+  document.getElementById('confirmCodeInput').value = '';
+});
+
+</script>
+
+</body>
+</html>
