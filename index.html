@@ -193,9 +193,14 @@
     justify-content:space-between; position:relative; cursor:pointer; overflow:hidden;
   }
   .day-cell.pad{visibility:hidden;}
-  .day-cell.today{border-color:var(--gold);}
+  .day-cell.today{border-color:var(--gold); border-width:2px;}
   .day-num{font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-muted); font-weight:600;}
   .day-cell.today .day-num{color:var(--gold);}
+  .day-cell.lit{border-color:rgba(0,0,0,0.25);}
+  .day-cell.lit .day-num{color:#141821; font-weight:800; text-shadow:0 1px 1px rgba(255,255,255,0.25);}
+  .day-cell.lit.today .day-num{color:#141821;}
+  .day-cell.lit .day-label{color:rgba(20,24,33,0.85); font-weight:600;}
+  .day-cell.lit .dot{box-shadow:0 0 0 1.5px rgba(20,24,33,0.55);}
   .dots-row{display:flex; flex-wrap:wrap; gap:3px; margin-top:auto;}
   .day-label{
     font-size:8.5px; color:var(--text-muted); line-height:1.15; margin-top:3px;
@@ -584,15 +589,15 @@ const db = getFirestore(fbApp);
 const PLANNER_DOC = doc(db, 'planner', 'household');
 
 const BASE_TYPES = [
-  {id:'day', label:'Day shift', color:'var(--day)', hex:'#F0A857', bg:'rgba(240,168,87,0.22)'},
-  {id:'night', label:'Night shift', color:'var(--night)', hex:'#5C8CF0', bg:'rgba(92,140,240,0.22)'},
-  {id:'evening', label:'Evening shift', color:'var(--evening)', hex:'#B98CE8', bg:'rgba(185,140,232,0.22)'},
-  {id:'overtime', label:'Overtime', color:'var(--overtime)', hex:'#EE6B63', bg:'rgba(238,107,99,0.22)'},
-  {id:'holiday', label:'Holiday', color:'var(--holiday)', hex:'#48C793', bg:'rgba(72,199,147,0.22)'},
-  {id:'off', label:'Off', color:'var(--off)', hex:'#78829A', bg:'rgba(120,130,150,0.20)'},
-  {id:'event', label:'Event', color:'var(--event)', hex:'#F17DA8', bg:'rgba(241,125,168,0.20)'},
-  {id:'football', label:"Charlie's Football", color:'var(--football)', hex:'#42C9BB', bg:'rgba(66,201,187,0.18)'},
-  {id:'district', label:"Stevenage District", color:'var(--district)', hex:'#4FA8E8', bg:'rgba(79,168,232,0.18)'},
+  {id:'day', label:'Day shift', color:'var(--day)', hex:'#F0A857', bg:'rgba(240,168,87,0.62)'},
+  {id:'night', label:'Night shift', color:'var(--night)', hex:'#5C8CF0', bg:'rgba(92,140,240,0.62)'},
+  {id:'evening', label:'Evening shift', color:'var(--evening)', hex:'#B98CE8', bg:'rgba(185,140,232,0.62)'},
+  {id:'overtime', label:'Overtime', color:'var(--overtime)', hex:'#EE6B63', bg:'rgba(238,107,99,0.62)'},
+  {id:'holiday', label:'Holiday', color:'var(--holiday)', hex:'#48C793', bg:'rgba(72,199,147,0.62)'},
+  {id:'off', label:'Off', color:'var(--off)', hex:'#78829A', bg:'rgba(120,130,150,0.55)'},
+  {id:'event', label:'Event', color:'var(--event)', hex:'#F17DA8', bg:'rgba(241,125,168,0.60)'},
+  {id:'football', label:"Charlie's Football", color:'var(--football)', hex:'#42C9BB', bg:'rgba(66,201,187,0.55)'},
+  {id:'district', label:"Stevenage District", color:'var(--district)', hex:'#4FA8E8', bg:'rgba(79,168,232,0.55)'},
 ];
 // Order in which entry types "win" the whole-cell background colour when a day has more than one
 const BASE_BG_PRIORITY = ['day','night','evening','overtime','holiday','off','event','football','district'];
@@ -920,7 +925,7 @@ function renderCalendar(){
     if(entries.length){
       for(const pid of bgPriorityOrder()){
         const found = entries.find(e => e.typeId === pid);
-        if(found){ cell.style.background = typeById(pid).bg; break; }
+        if(found){ cell.style.background = typeById(pid).bg; cell.classList.add('lit'); break; }
       }
       const dotsRow = document.createElement('div');
       dotsRow.className = 'dots-row';
@@ -1245,7 +1250,7 @@ document.getElementById('typesList').addEventListener('change', (e)=>{
   if(!e.target.classList.contains('type-swatch')) return;
   const id = e.target.dataset.typeId;
   const hex = e.target.value;
-  const bg = hexToRgba(hex, 0.22);
+  const bg = hexToRgba(hex, 0.6);
   const custom = (store.customTypes || []).find(t=>t.id===id);
   if(custom){
     custom.color = hex; custom.hex = hex; custom.bg = bg;
@@ -1281,7 +1286,7 @@ document.getElementById('addTypeBtn').addEventListener('click', ()=>{
   if(!store.customTypes) store.customTypes = [];
   let uniqueId = id, n = 2;
   while(allTypes().some(t=>t.id===uniqueId)){ uniqueId = `${id}-${n}`; n++; }
-  store.customTypes.push({ id: uniqueId, label: name, color: hex, hex, bg: hexToRgba(hex, 0.2) });
+  store.customTypes.push({ id: uniqueId, label: name, color: hex, hex, bg: hexToRgba(hex, 0.6) });
   saveData();
   document.getElementById('newTypeName').value = '';
   document.getElementById('newTypeColor').value = '#D8B679';
