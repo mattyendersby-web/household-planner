@@ -238,6 +238,27 @@
   .tag-pill button{background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:0;line-height:1;}
   .note{font-size:11.5px;color:var(--text-muted);text-align:center;padding:18px 24px 0;}
 
+  .week-planner{padding:22px 20px 30px;}
+  .week-planner-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .week-planner-header h3{font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0;}
+  .week-nav{display:flex;align-items:center;gap:10px;}
+  .week-nav button{
+    width:28px;height:28px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .week-range-label{font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums;min-width:88px;text-align:center;}
+  .week-day-row{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:12px 14px; margin-bottom:8px; cursor:pointer;
+  }
+  .week-day-row.today{border-color:var(--gold);}
+  .week-day-name{font-size:13.5px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;}
+  .week-day-row.today .week-day-name{color:var(--gold);}
+  .week-day-name .wd-date{color:var(--text-muted);font-weight:500;font-size:11.5px;}
+  .week-entry{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:5px;}
+  .week-empty{font-size:12.5px;color:var(--text-muted);}
+
   #repeatView,#overtimeView,#fixturesView,#districtView{display:none;padding:18px 20px 30px;}
   .fx-section{margin-bottom:26px;}
   .fx-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0 0 12px;}
@@ -347,6 +368,18 @@
     <div class="grid" id="grid"></div>
   </div>
   <p class="note">Tap any day to add a shift or event.</p>
+
+  <div class="week-planner">
+    <div class="week-planner-header">
+      <h3>Week Planner</h3>
+      <div class="week-nav">
+        <button id="weekPrevBtn">‹</button>
+        <span class="week-range-label" id="weekRangeLabel">—</span>
+        <button id="weekNextBtn">›</button>
+      </div>
+    </div>
+    <div id="weekList"></div>
+  </div>
 </div>
 
 <div id="repeatView">
@@ -954,7 +987,77 @@ function renderCalendar(){
   }
 
   renderTodayCard();
+  renderWeekPlanner();
 }
+
+function mondayOf(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+let weekAnchor = mondayOf(new Date());
+const WEEKDAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function renderWeekPlanner(){
+  const el = document.getElementById('weekList');
+  if(!el) return;
+  el.innerHTML = '';
+  const today = new Date();
+  const todayKeyStr = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  for(let i=0;i<7;i++){
+    const d = new Date(weekAnchor);
+    d.setDate(d.getDate()+i);
+    const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+    const row = document.createElement('div');
+    row.className = 'week-day-row' + (key===todayKeyStr ? ' today' : '');
+    row.addEventListener('click', ()=> openDaySheet(key));
+
+    const nameRow = document.createElement('div');
+    nameRow.className = 'week-day-name';
+    nameRow.innerHTML = `<span>${WEEKDAY_NAMES[i]}</span><span class="wd-date">${d.getDate()} ${MONTH_SHORT[d.getMonth()]}</span>`;
+    row.appendChild(nameRow);
+
+    const entries = entriesForDate(key);
+    if(!entries.length){
+      const empty = document.createElement('div');
+      empty.className = 'week-empty';
+      empty.textContent = 'Nothing planned';
+      row.appendChild(empty);
+    }else{
+      entries.forEach(e=>{
+        const t = typeById(e.typeId);
+        const line = document.createElement('div');
+        line.className = 'week-entry';
+        line.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span>${entryDisplayLabel(e)}`;
+        row.appendChild(line);
+      });
+    }
+    el.appendChild(row);
+  }
+
+  const endDate = new Date(weekAnchor);
+  endDate.setDate(endDate.getDate()+6);
+  const labelEl = document.getElementById('weekRangeLabel');
+  if(labelEl){
+    labelEl.textContent = `${weekAnchor.getDate()} ${MONTH_SHORT[weekAnchor.getMonth()]} – ${endDate.getDate()} ${MONTH_SHORT[endDate.getMonth()]}`;
+  }
+}
+
+document.getElementById('weekPrevBtn').addEventListener('click', ()=>{
+  weekAnchor.setDate(weekAnchor.getDate()-7);
+  renderWeekPlanner();
+});
+document.getElementById('weekNextBtn').addEventListener('click', ()=>{
+  weekAnchor.setDate(weekAnchor.getDate()+7);
+  renderWeekPlanner();
+});
+
 
 function renderTypeGrid(containerId, onSelect, types){
   const el = document.getElementById(containerId);
@@ -1183,7 +1286,9 @@ document.getElementById('nextBtn').addEventListener('click', ()=>{
   viewMonth++; if(viewMonth>11){ viewMonth=0; viewYear++; } renderCalendar();
 });
 document.getElementById('todayBtn').addEventListener('click', ()=>{
-  const t = new Date(); viewYear = t.getFullYear(); viewMonth = t.getMonth(); renderCalendar();
+  const t = new Date(); viewYear = t.getFullYear(); viewMonth = t.getMonth();
+  weekAnchor = mondayOf(t);
+  renderCalendar();
 });
 
 // ---- Overtime tab ----
