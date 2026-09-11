@@ -526,7 +526,7 @@
       </div>
       <div class="field-label">Custom label (optional)</div>
       <input type="text" id="customLabel" placeholder="e.g. Charlie's football">
-      <label class="include-toggle">
+      <label class="include-toggle" id="entryIncludeRow">
         <input type="checkbox" id="entryIncludeOther">
         <span id="entryIncludeLabel">Include on shared calendar</span>
       </label>
@@ -614,12 +614,17 @@ function hexToRgba(hex, alpha){
 function allTypes(){
   const merged = BASE_TYPES.map(t=>{
     const ov = store.typeOverrides && store.typeOverrides[t.id];
-    return ov ? {...t, color: ov.color, hex: ov.color, bg: ov.bg} : t;
+    if(!ov) return t;
+    return {...t, color: ov.color, hex: ov.color, bg: ov.bg, label: ov.label || t.label};
   });
   return [...merged, ...(store.customTypes || [])];
 }
+function visibleTypes(){
+  const hidden = store.hiddenBaseTypes || [];
+  return allTypes().filter(t => !hidden.includes(t.id));
+}
 function personalTypes(){
-  return allTypes().filter(t => t.id !== 'football' && t.id !== 'district');
+  return visibleTypes();
 }
 function bgPriorityOrder(){
   return [...BASE_BG_PRIORITY, ...(store.customTypes || []).map(t=>t.id)];
@@ -676,7 +681,7 @@ const DISTRICT_FIXTURES = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, pin:'2015' };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015' };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -690,10 +695,11 @@ function personalStore(){ return store[activeProfile]; }
 function otherProfile(){ return PROFILES.find(p => p !== activeProfile) || PROFILES[0]; }
 
 function applyRawStore(raw){
-  if(raw && (raw.Matty || raw.Nicola || raw.shared || raw.customTypes || raw.typeOverrides || raw.pin)){
+  if(raw && (raw.Matty || raw.Nicola || raw.shared || raw.customTypes || raw.typeOverrides || raw.hiddenBaseTypes || raw.pin)){
     store = {
       Matty: raw.Matty || {}, Nicola: raw.Nicola || {}, shared: raw.shared || {},
       customTypes: raw.customTypes || [], typeOverrides: raw.typeOverrides || {},
+      hiddenBaseTypes: raw.hiddenBaseTypes || [],
       pin: raw.pin || '2015'
     };
   }
@@ -881,7 +887,7 @@ function seedFixtureList(list, typeId){
 function renderLegend(){
   const el = document.getElementById('legend');
   el.innerHTML = '';
-  allTypes().forEach(t=>{
+  visibleTypes().forEach(t=>{
     const chip = document.createElement('div');
     chip.className = 'chip';
     chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}`;
@@ -982,6 +988,8 @@ function applyEntryTypeDefaults(){
   const dt = DEFAULT_TIMES[id];
   document.getElementById('entryStart').value = dt ? dt.start : '';
   document.getElementById('entryEnd').value = dt ? dt.end : '';
+  const isFixtureType = (id === 'football' || id === 'district');
+  document.getElementById('entryIncludeRow').style.display = isFixtureType ? 'none' : 'flex';
 }
 
 function resetAddEntryForm(){
@@ -1040,9 +1048,15 @@ function renderDayEntries(){
     const t = typeById(e.typeId);
     const pill = document.createElement('div');
     pill.className = 'tag-pill';
-    pill.style.cursor = 'pointer';
-    pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span>${entryDisplayLabel(e)}`;
-    pill.addEventListener('click', ()=> openEntryDetail('shared', activeDate, idx));
+    pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span><span class="pill-label" style="cursor:pointer;">${entryDisplayLabel(e)}</span><button data-idx="${idx}">×</button>`;
+    pill.querySelector('.pill-label').addEventListener('click', ()=> openEntryDetail('shared', activeDate, idx));
+    pill.querySelector('button').addEventListener('click', ()=>{
+      store.shared[activeDate].splice(idx,1);
+      if(store.shared[activeDate].length===0) delete store.shared[activeDate];
+      saveData();
+      renderDayEntries();
+      renderCalendar();
+    });
     el.appendChild(pill);
   });
 }
@@ -1064,8 +1078,12 @@ document.getElementById('addEntryBtn').addEventListener('click', ()=>{
   const start = document.getElementById('entryStart').value;
   const end = document.getElementById('entryEnd').value;
   const includeOther = document.getElementById('entryIncludeOther').checked;
-  if(!personalStore()[activeDate]) personalStore()[activeDate] = [];
-  personalStore()[activeDate].push({typeId: selectedType, label: label || null, start: start || null, end: end || null, shared: includeOther});
+  const isFixtureType = (selectedType === 'football' || selectedType === 'district');
+  const targetStore = isFixtureType ? store.shared : personalStore();
+  if(!targetStore[activeDate]) targetStore[activeDate] = [];
+  const entry = {typeId: selectedType, label: label || null, start: start || null, end: end || null};
+  if(!isFixtureType) entry.shared = includeOther;
+  targetStore[activeDate].push(entry);
   saveData();
   renderDayEntries();
   renderCalendar();
@@ -1238,43 +1256,87 @@ document.getElementById('doneTypesBtn').addEventListener('click', ()=>{
 function renderTypesList(){
   const el = document.getElementById('typesList');
   el.innerHTML = '';
+  const hidden = store.hiddenBaseTypes || [];
   allTypes().forEach(t=>{
     const isCustom = (store.customTypes || []).some(ct=>ct.id===t.id);
+    const isHidden = hidden.includes(t.id);
     const row = document.createElement('div');
     row.className = 'fx-row';
-    row.innerHTML = `<input type="color" class="type-swatch" data-type-id="${t.id}" value="${t.hex || '#D8B679'}"><span class="fx-info">${t.label}</span>${isCustom ? `<button class="type-delete" data-type-id="${t.id}">×</button>` : ''}`;
+    if(isHidden) row.style.opacity = '0.5';
+    const removeBtn = isHidden
+      ? `<button class="type-restore" data-type-id="${t.id}" style="color:var(--gold);font-size:12px;background:none;border:none;padding:0 4px;">Restore</button>`
+      : `<button class="type-delete" data-type-id="${t.id}">×</button>`;
+    row.innerHTML = `<input type="color" class="type-swatch" data-type-id="${t.id}" value="${t.hex || '#D8B679'}"><input type="text" class="type-name" data-type-id="${t.id}" value="${t.label}" style="flex:1;background:none;border:none;color:var(--text);font-size:13.5px;padding:0 8px;"><span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">${isHidden ? 'Hidden' : ''}</span>${removeBtn}`;
     el.appendChild(row);
   });
 }
-document.getElementById('typesList').addEventListener('change', (e)=>{
-  if(!e.target.classList.contains('type-swatch')) return;
-  const id = e.target.dataset.typeId;
-  const hex = e.target.value;
+
+function saveTypeColor(id, hex){
   const bg = hexToRgba(hex, 0.6);
   const custom = (store.customTypes || []).find(t=>t.id===id);
   if(custom){
     custom.color = hex; custom.hex = hex; custom.bg = bg;
   }else{
     if(!store.typeOverrides) store.typeOverrides = {};
-    store.typeOverrides[id] = { color: hex, bg };
+    store.typeOverrides[id] = { ...(store.typeOverrides[id]||{}), color: hex, bg };
   }
   saveData();
   renderLegend();
   renderCalendar();
   if(activeDate) renderDayEntries();
+}
+
+function saveTypeName(id, name){
+  name = name.trim();
+  if(!name) return;
+  const custom = (store.customTypes || []).find(t=>t.id===id);
+  if(custom){
+    custom.label = name;
+  }else{
+    if(!store.typeOverrides) store.typeOverrides = {};
+    store.typeOverrides[id] = { ...(store.typeOverrides[id]||{}), label: name };
+  }
+  saveData();
+  renderLegend();
+  renderCalendar();
+  populateTypeSelect();
+  if(activeDate) renderDayEntries();
+}
+
+document.getElementById('typesList').addEventListener('change', (e)=>{
+  const id = e.target.dataset.typeId;
+  if(!id) return;
+  if(e.target.classList.contains('type-swatch')) saveTypeColor(id, e.target.value);
+  if(e.target.classList.contains('type-name')) saveTypeName(id, e.target.value);
 });
 document.getElementById('typesList').addEventListener('click', (e)=>{
-  if(!e.target.classList.contains('type-delete')) return;
   const id = e.target.dataset.typeId;
-  const t = (store.customTypes || []).find(x=>x.id===id);
-  if(!t) return;
-  if(!confirm(`Remove "${t.label}"? Entries already using it will show as a generic event.`)) return;
-  store.customTypes = store.customTypes.filter(x=>x.id!==id);
-  saveData();
-  renderTypesList();
-  renderLegend();
-  populateTypeSelect();
-  renderCalendar();
+  if(!id) return;
+  if(e.target.classList.contains('type-delete')){
+    const custom = (store.customTypes || []).find(x=>x.id===id);
+    const t = typeById(id);
+    if(custom){
+      if(!confirm(`Remove "${t.label}"? Entries already using it will show as a generic event.`)) return;
+      store.customTypes = store.customTypes.filter(x=>x.id!==id);
+    }else{
+      if(!confirm(`Hide "${t.label}"? It won't be offered for new entries, but anything already on the calendar keeps its colour and name. You can restore it any time.`)) return;
+      if(!store.hiddenBaseTypes) store.hiddenBaseTypes = [];
+      store.hiddenBaseTypes.push(id);
+    }
+    saveData();
+    renderTypesList();
+    renderLegend();
+    populateTypeSelect();
+    renderCalendar();
+  }
+  if(e.target.classList.contains('type-restore')){
+    store.hiddenBaseTypes = (store.hiddenBaseTypes || []).filter(x=>x!==id);
+    saveData();
+    renderTypesList();
+    renderLegend();
+    populateTypeSelect();
+    renderCalendar();
+  }
 });
 
 document.getElementById('addTypeBtn').addEventListener('click', ()=>{
