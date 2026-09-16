@@ -32,6 +32,8 @@
     --event:#F17DA8;
     --football:#42C9BB;
     --district:#4FA8E8;
+    --tickets:#C2447A;
+    --tickets-away:#9B5DE0;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -272,6 +274,20 @@
   .fx-row button{background:none;border:none;color:var(--overtime);font-size:16px;cursor:pointer;padding:0 4px;}
   .fx-empty{font-size:13px;color:var(--text-muted);}
   .fx-form{display:flex;flex-direction:column;gap:10px;}
+
+  .ticket-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:12px 14px; margin-bottom:10px;
+  }
+  .ticket-card-header{
+    display:flex; align-items:center; gap:9px; cursor:pointer; margin-bottom:10px;
+  }
+  .ticket-title{flex:1; font-size:14px; font-weight:700;}
+  .ticket-delete-btn{background:none;border:none;color:var(--overtime);font-size:17px;cursor:pointer;padding:0 4px;}
+  .ticket-grid{display:flex; flex-direction:column; gap:6px; padding-left:18px;}
+  .ticket-field{display:flex; justify-content:space-between; gap:10px; font-size:12px;}
+  .ticket-field-label{color:var(--text-muted); white-space:nowrap;}
+  .ticket-field-value{color:var(--text); text-align:right;}
   .fx-form-row{display:grid;grid-template-columns:1.3fr 2fr 1fr;gap:8px;}
   textarea{min-height:100px;margin-top:10px;resize:vertical;font-size:12.5px;}
   .preview-item{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:10px;padding:9px 10px;font-size:13px;margin-bottom:6px;}
@@ -358,6 +374,8 @@
   <button class="tab-btn" id="tabOvertimeBtn">Overtime</button>
   <button class="tab-btn" id="tabFixturesBtn">MK Dons Fixtures</button>
   <button class="tab-btn" id="tabDistrictBtn">Stevenage District</button>
+  <button class="tab-btn" id="tabTicketsHomeBtn">Tottenham Home</button>
+  <button class="tab-btn" id="tabTicketsAwayBtn">Tottenham Away</button>
   <button class="tab-btn" id="tabTypesBtn">+ More</button>
 </div>
 
@@ -500,6 +518,60 @@
   </div>
 </div>
 
+<div id="ticketsHomeView">
+  <div class="fx-section">
+    <h3>Home ticket sale dates</h3>
+    <div class="fx-list" id="ticketsHomeList"></div>
+  </div>
+  <div class="fx-section">
+    <h3>Add a sale date manually</h3>
+    <div class="fx-form">
+      <input type="date" id="ticketsHomeDate">
+      <div class="fx-form-row">
+        <input type="text" id="ticketsHomeOpponent" placeholder="Opponent">
+        <select id="ticketsHomeVenue"><option value="H" selected>Home</option><option value="A">Away</option><option value="N">Neutral</option></select>
+        <button class="btn btn-primary" id="ticketsHomeAddBtn" style="padding:10px 6px;font-size:12.5px;">Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="fx-section">
+    <h3>Import a sale list</h3>
+    <div class="sub" style="margin-bottom:10px;">Copy the sale dates text from a PDF or spreadsheet and paste it below — no upload needed</div>
+    <textarea id="ticketsHomeRawText" placeholder="Paste sale dates here, e.g. '17 July 2026 Newcastle United H'"></textarea>
+    <button class="btn btn-ghost" id="ticketsHomeParseBtn" style="width:100%;margin-top:10px;">Find dates in this text</button>
+    <div id="ticketsHomeParseStatus" class="status-msg"></div>
+    <div id="ticketsHomePreviewList" style="margin-top:14px;"></div>
+    <button class="btn btn-primary" id="ticketsHomeAddSelectedBtn" style="width:100%;margin-top:10px;display:none;">Add selected dates</button>
+  </div>
+</div>
+
+<div id="ticketsAwayView">
+  <div class="fx-section">
+    <h3>Away ticket sale dates</h3>
+    <div class="fx-list" id="ticketsAwayList"></div>
+  </div>
+  <div class="fx-section">
+    <h3>Add a sale date manually</h3>
+    <div class="fx-form">
+      <input type="date" id="ticketsAwayDate">
+      <div class="fx-form-row">
+        <input type="text" id="ticketsAwayOpponent" placeholder="Opponent">
+        <select id="ticketsAwayVenue"><option value="H">Home</option><option value="A" selected>Away</option><option value="N">Neutral</option></select>
+        <button class="btn btn-primary" id="ticketsAwayAddBtn" style="padding:10px 6px;font-size:12.5px;">Add</button>
+      </div>
+    </div>
+  </div>
+  <div class="fx-section">
+    <h3>Import a sale list</h3>
+    <div class="sub" style="margin-bottom:10px;">Copy the sale dates text from a PDF or spreadsheet and paste it below — no upload needed</div>
+    <textarea id="ticketsAwayRawText" placeholder="Paste sale dates here, e.g. '28 July 2026 Brentford A'"></textarea>
+    <button class="btn btn-ghost" id="ticketsAwayParseBtn" style="width:100%;margin-top:10px;">Find dates in this text</button>
+    <div id="ticketsAwayParseStatus" class="status-msg"></div>
+    <div id="ticketsAwayPreviewList" style="margin-top:14px;"></div>
+    <button class="btn btn-primary" id="ticketsAwayAddSelectedBtn" style="width:100%;margin-top:10px;display:none;">Add selected dates</button>
+  </div>
+</div>
+
 <div id="typesView">
   <button class="btn btn-ghost" id="toggleTypesPanelBtn" style="width:100%;">Add or Remove Types</button>
   <div id="typesPanel" style="display:none; margin-top:18px;">
@@ -590,6 +662,18 @@
     <input type="text" id="fixtureDetailAddress" placeholder="e.g. Newbury FC, Faraday Road, RG14 2AD">
     <div class="field-label">Notes (optional)</div>
     <textarea id="fixtureDetailNotes" placeholder="Any other details"></textarea>
+    <div id="fixtureDetailTicketSection" style="display:none;">
+      <div class="field-label">Open form date</div>
+      <input type="text" id="ticketFieldOpenForm">
+      <div class="field-label">Close form date</div>
+      <input type="text" id="ticketFieldCloseForm">
+      <div class="field-label">Staff sale date</div>
+      <input type="text" id="ticketFieldStaffSale">
+      <div class="field-label">Closing date (to pay)</div>
+      <input type="text" id="ticketFieldClosingPay">
+      <div class="field-label">Fixture date</div>
+      <input type="text" id="ticketFieldFixtureDate">
+    </div>
     <label class="include-toggle" id="fixtureDetailIncludeRow">
       <input type="checkbox" id="fixtureDetailInclude">
       <span id="fixtureDetailIncludeLabel">Include on shared calendar</span>
@@ -631,9 +715,11 @@ const BASE_TYPES = [
   {id:'event', label:'Event', color:'var(--event)', hex:'#F17DA8', bg:'rgba(241,125,168,0.60)'},
   {id:'football', label:"Charlie's Football", color:'var(--football)', hex:'#42C9BB', bg:'rgba(66,201,187,0.55)'},
   {id:'district', label:"Stevenage District", color:'var(--district)', hex:'#4FA8E8', bg:'rgba(79,168,232,0.55)'},
+  {id:'tickets_home', label:'Tottenham Home', color:'var(--tickets)', hex:'#C2447A', bg:'rgba(194,68,122,0.55)'},
+  {id:'tickets_away', label:'Tottenham Away', color:'var(--tickets-away)', hex:'#9B5DE0', bg:'rgba(155,93,224,0.55)'},
 ];
 // Order in which entry types "win" the whole-cell background colour when a day has more than one
-const BASE_BG_PRIORITY = ['day','night','evening','overtime','holiday','off','event','football','district'];
+const BASE_BG_PRIORITY = ['day','night','evening','overtime','holiday','off','event','football','district','tickets_home','tickets_away'];
 
 function hexToRgba(hex, alpha){
   hex = hex.replace('#','');
@@ -710,6 +796,51 @@ const DISTRICT_FIXTURES = [
   {date:'2027-04-24', opponent:'League Cup Finals — venue TBC', venue:'N'},
   {date:'2027-05-08', opponent:'Shires Cup Finals Day — Oxford City FC Stadium', venue:'N'},
   {date:'2027-05-15', opponent:'Southern Counties Cup Finals Day — Oxford City FC Stadium', venue:'N'},
+];
+
+// Staff ticket sale dates 2026/27 — date used is the Staff Sale Date (when to actually buy)
+const STAFF_TICKETS_HOME = [
+  {date:'2026-07-17', opponent:'Newcastle United', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 17th July (member sale starts 20th July)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 29th August'},
+  {date:'2026-07-17', opponent:'Everton', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 17th July', closingPay:'KICK OFF', fixtureDate:'3:00pm - 12th September'},
+  {date:'2026-07-17', opponent:'Aston Villa', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 17th July', closingPay:'KICK OFF', fixtureDate:'3:00pm - 19th September'},
+  {date:'2026-08-14', opponent:'Coventry', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 14th August (member sales start 17th August)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 17th October'},
+  {date:'2026-08-14', opponent:'Crystal Palace', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 14th August', closingPay:'KICK OFF', fixtureDate:'3:00pm - 31st October'},
+  {date:'2026-09-11', opponent:'Ipswich', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 11th September (member sales start 14th September)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 21st November'},
+  {date:'2026-09-11', opponent:'Fulham', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 11th September', closingPay:'KICK OFF', fixtureDate:'8:00pm - 2nd December'},
+  {date:'2026-09-11', opponent:'Arsenal', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 11th September', closingPay:'KICK OFF', fixtureDate:'3:00pm - 5th December'},
+  {date:'2026-10-16', opponent:'Bournemouth', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 16th October (member sale starts on 19th October)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 26th December'},
+  {date:'2026-10-16', opponent:'Brighton & Hove Albion', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 16th October', closingPay:'KICK OFF', fixtureDate:'8:00pm - 30th December'},
+  {date:'2026-11-13', opponent:'Leeds United', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 13th November (member sale start 16th November)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 16th January'},
+  {date:'2026-11-13', opponent:'Sunderland', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 13th November', closingPay:'KICK OFF', fixtureDate:'3:00pm - 30th January'},
+  {date:'2026-11-13', opponent:'Manchester City', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 13th November', closingPay:'KICK OFF', fixtureDate:'8:00pm - 10th February'},
+  {date:'2027-01-15', opponent:'Liverpool', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 15th January (members sale start 18th January)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 27th February'},
+  {date:'2027-01-15', opponent:'Forest', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 15th January', closingPay:'KICK OFF', fixtureDate:'3:00pm - 13th March'},
+  {date:'2027-01-15', opponent:'Brentford', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 15th January', closingPay:'KICK OFF', fixtureDate:'3:00pm - 10th April'},
+  {date:'2027-03-05', opponent:'Hull', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 5th March (members sales start 8th March)', closingPay:'KICK OFF', fixtureDate:'3:00pm - 24th April'},
+  {date:'2027-03-05', opponent:'Chelsea', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 5th March', closingPay:'KICK OFF', fixtureDate:'3:00pm - 8th May'},
+  {date:'2027-03-05', opponent:'Manchester United', venue:'H', openForm:'N/A', closeForm:'N/A', staffSale:'10am Friday 5th March', closingPay:'KICK OFF', fixtureDate:'3:00pm - 23rd May'},
+];
+
+const STAFF_TICKETS_AWAY = [
+  {date:'2026-07-28', opponent:'Brentford', venue:'A', openForm:'Friday 24th July', closeForm:'5pm Monday 27th July', staffSale:'11am Tuesday 28th July', closingPay:'12pm Thursday 30th July', fixtureDate:'5:30pm - 22nd August'},
+  {date:'2026-08-11', opponent:'Forest', venue:'A', openForm:'Friday 7th August', closeForm:'5pm Monday 10th August', staffSale:'11am Tuesday 11th August', closingPay:'12pm Thursday 13th August', fixtureDate:'3:00pm - 5th September'},
+  {date:'2026-09-15', opponent:'Manchester United', venue:'A', openForm:'Thursday 10th September', closeForm:'10am Monday 14th September', staffSale:'11am Tuesday 15th September', closingPay:'12pm Thursday 17th September', fixtureDate:'3:00pm - 10th October'},
+  {date:'2026-09-29', opponent:'Chelsea', venue:'A', openForm:'Thursday 24th September', closeForm:'10am Monday 28th September', staffSale:'11am Tuesday 29th September', closingPay:'12pm Thursday 1st October', fixtureDate:'3:00pm - 24th October'},
+  {date:'2026-10-13', opponent:'Leeds', venue:'A', openForm:'Thursday 8th October', closeForm:'10am Monday 12th October', staffSale:'11am Tuesday 13th October', closingPay:'12pm Thursday 15th October', fixtureDate:'3:00pm - 7th November'},
+  {date:'2026-11-03', opponent:'Sunderland', venue:'A', openForm:'Thursday 29th October', closeForm:'10am Monday 2nd November', staffSale:'11am Tuesday 3rd November', closingPay:'12pm Thursday 5th November', fixtureDate:'3:00pm - 28th November'},
+  {date:'2026-11-17', opponent:'Hull City', venue:'A', openForm:'Thursday 13th November', closeForm:'10am Monday 16th November', staffSale:'11am Tuesday 17th November', closingPay:'12pm Thursday 19th November', fixtureDate:'3:00pm - 12th December'},
+  {date:'2026-11-24', opponent:'Liverpool', venue:'A', openForm:'Thursday 19th November', closeForm:'10am Monday 23rd November', staffSale:'11am Tuesday 24th November', closingPay:'12pm Thursday 26th November', fixtureDate:'3:00pm - 19th December'},
+  {date:'2026-12-08', opponent:'Manchester City', venue:'A', openForm:'Thursday 3rd December', closeForm:'10am Monday 7th December', staffSale:'11am Tuesday 8th December', closingPay:'12pm Thursday 10th December', fixtureDate:'3:00pm - 2nd January'},
+  {date:'2026-12-08', opponent:'Fulham', venue:'A', openForm:'Thursday 3rd December', closeForm:'10am Monday 7th December', staffSale:'11am Tuesday 8th December', closingPay:'12pm Thursday 10th December', fixtureDate:'8:00pm - 6th January'},
+  {date:'2026-12-15', opponent:'Crystal Palace', venue:'A', openForm:'Thursday 10th December', closeForm:'10am Monday 14th December', staffSale:'11am Tuesday 15th December', closingPay:'12pm Thursday 17th December', fixtureDate:'3:00pm - 23rd January'},
+  {date:'2027-01-12', opponent:'Ipswich', venue:'A', openForm:'Thursday 7th January', closeForm:'10am Monday 11th January', staffSale:'11am Tuesday 12th January', closingPay:'12pm Thursday 14th January', fixtureDate:'3:00pm - 6th February'},
+  {date:'2027-01-26', opponent:'Brighton', venue:'A', openForm:'Thursday 21st January', closeForm:'10am Monday 25th January', staffSale:'11am Tuesday 26th January', closingPay:'12pm Thursday 28th January', fixtureDate:'3:00pm - 20th February'},
+  {date:'2027-02-09', opponent:'Bournemouth', venue:'A', openForm:'Thursday 4th February', closeForm:'10am Monday 8th January (as shown on source sheet — check, likely means 8th February)', staffSale:'11am Tuesday 9th February', closingPay:'12pm Thursday 11th February', fixtureDate:'8:00pm - 3rd March'},
+  {date:'2027-02-23', opponent:'Everton', venue:'A', openForm:'Thursday 18th February', closeForm:'10am Monday 22nd February', staffSale:'11am Tuesday 23rd February', closingPay:'12pm Thursday 25th February', fixtureDate:'3:00pm 20th March'},
+  {date:'2027-03-23', opponent:'Newcastle', venue:'A', openForm:'Thursday 18th March', closeForm:'10am Monday 22nd March', staffSale:'11am Tuesday 23rd March', closingPay:'12pm Thursday 25th March', fixtureDate:'3:00pm 17th April'},
+  {date:'2027-04-06', opponent:'Arsenal', venue:'A', openForm:'Thursday 1st April', closeForm:'10am Monday 5th April', staffSale:'11am Tuesday 6th April', closingPay:'12pm Thursday 8th April', fixtureDate:'3:00pm 1st May'},
+  {date:'2027-04-20', opponent:'Coventry', venue:'A', openForm:'Thursday 15th April', closeForm:'10am Monday 19th April', staffSale:'11am Tuesday 20th April', closingPay:'12pm Thursday 22nd April', fixtureDate:'3:00pm 15th May'},
+  {date:'2027-04-27', opponent:'Aston Villa', venue:'A', openForm:'Thursday 22nd April', closeForm:'10am Monday 26th April', staffSale:'11am Tuesday 27th April', closingPay:'12pm Thursday 29th April', fixtureDate:'4:00pm 30th May'},
 ];
 
 const PROFILES = ['Matty', 'Nicola'];
@@ -821,6 +952,17 @@ function openEntryDetail(scope, date, idx){
   document.getElementById('fixtureDetailEnd').value = entry.end || '';
   document.getElementById('fixtureDetailAddress').value = entry.address || '';
   document.getElementById('fixtureDetailNotes').value = entry.notes || '';
+
+  const isTicket = (entry.typeId === 'tickets_home' || entry.typeId === 'tickets_away');
+  document.getElementById('fixtureDetailTicketSection').style.display = isTicket ? 'block' : 'none';
+  if(isTicket){
+    document.getElementById('ticketFieldOpenForm').value = entry.openForm || '';
+    document.getElementById('ticketFieldCloseForm').value = entry.closeForm || '';
+    document.getElementById('ticketFieldStaffSale').value = entry.staffSale || '';
+    document.getElementById('ticketFieldClosingPay').value = entry.closingPay || '';
+    document.getElementById('ticketFieldFixtureDate').value = entry.fixtureDate || '';
+  }
+
   const includeRow = document.getElementById('fixtureDetailIncludeRow');
   if(scope === 'personal'){
     includeRow.style.display = 'flex';
@@ -838,6 +980,8 @@ function refreshAfterEntryChange(){
   if(currentTabName === 'fixtures') renderFixtureList();
   if(currentTabName === 'district') renderDistrictList();
   if(currentTabName === 'overtime') renderOvertimeList();
+  if(currentTabName === 'ticketsHome') renderTicketsHomeList();
+  if(currentTabName === 'ticketsAway') renderTicketsAwayList();
 }
 
 document.getElementById('fixtureDetailSaveBtn').addEventListener('click', ()=>{
@@ -847,6 +991,13 @@ document.getElementById('fixtureDetailSaveBtn').addEventListener('click', ()=>{
   entry.end = document.getElementById('fixtureDetailEnd').value || null;
   entry.address = document.getElementById('fixtureDetailAddress').value.trim() || null;
   entry.notes = document.getElementById('fixtureDetailNotes').value.trim() || null;
+  if(entry.typeId === 'tickets_home' || entry.typeId === 'tickets_away'){
+    entry.openForm = document.getElementById('ticketFieldOpenForm').value.trim() || null;
+    entry.closeForm = document.getElementById('ticketFieldCloseForm').value.trim() || null;
+    entry.staffSale = document.getElementById('ticketFieldStaffSale').value.trim() || null;
+    entry.closingPay = document.getElementById('ticketFieldClosingPay').value.trim() || null;
+    entry.fixtureDate = document.getElementById('ticketFieldFixtureDate').value.trim() || null;
+  }
   if(activeEntryRef.scope === 'personal'){
     entry.shared = document.getElementById('fixtureDetailInclude').checked;
   }
@@ -912,7 +1063,17 @@ function seedFixtureList(list, typeId){
     const label = `vs ${fx.opponent} ${venueLabel}`;
     if(!store.shared[fx.date]) store.shared[fx.date] = [];
     const already = store.shared[fx.date].some(e => e.typeId===typeId && e.label===label);
-    if(!already){ store.shared[fx.date].push({typeId, label}); changed = true; }
+    if(!already){
+      const entry = {typeId, label};
+      if(fx.notes) entry.notes = fx.notes;
+      if(fx.openForm) entry.openForm = fx.openForm;
+      if(fx.closeForm) entry.closeForm = fx.closeForm;
+      if(fx.staffSale) entry.staffSale = fx.staffSale;
+      if(fx.closingPay) entry.closingPay = fx.closingPay;
+      if(fx.fixtureDate) entry.fixtureDate = fx.fixtureDate;
+      store.shared[fx.date].push(entry);
+      changed = true;
+    }
   });
   if(changed) saveData();
 }
@@ -1314,6 +1475,8 @@ const TAB_BTNS = {
   overtime: document.getElementById('tabOvertimeBtn'),
   fixtures: document.getElementById('tabFixturesBtn'),
   district: document.getElementById('tabDistrictBtn'),
+  ticketsHome: document.getElementById('tabTicketsHomeBtn'),
+  ticketsAway: document.getElementById('tabTicketsAwayBtn'),
   types: document.getElementById('tabTypesBtn'),
 };
 const TAB_VIEWS = {
@@ -1322,6 +1485,8 @@ const TAB_VIEWS = {
   overtime: document.getElementById('overtimeView'),
   fixtures: document.getElementById('fixturesView'),
   district: document.getElementById('districtView'),
+  ticketsHome: document.getElementById('ticketsHomeView'),
+  ticketsAway: document.getElementById('ticketsAwayView'),
   types: document.getElementById('typesView'),
 };
 function showTab(name){
@@ -1335,6 +1500,8 @@ function showTab(name){
   if(name==='overtime') renderOvertimeList();
   if(name==='fixtures') renderFixtureList();
   if(name==='district') renderDistrictList();
+  if(name==='ticketsHome') renderTicketsHomeList();
+  if(name==='ticketsAway') renderTicketsAwayList();
   if(name==='types') document.getElementById('typesPanel').style.display = 'none';
 }
 TAB_BTNS.calendar.addEventListener('click', ()=>showTab('calendar'));
@@ -1342,6 +1509,8 @@ TAB_BTNS.repeat.addEventListener('click', ()=>showTab('repeat'));
 TAB_BTNS.overtime.addEventListener('click', ()=>showTab('overtime'));
 TAB_BTNS.fixtures.addEventListener('click', ()=>showTab('fixtures'));
 TAB_BTNS.district.addEventListener('click', ()=>showTab('district'));
+TAB_BTNS.ticketsHome.addEventListener('click', ()=>showTab('ticketsHome'));
+TAB_BTNS.ticketsAway.addEventListener('click', ()=>showTab('ticketsAway'));
 TAB_BTNS.types.addEventListener('click', ()=>showTab('types'));
 
 document.getElementById('brandHomeBtn').addEventListener('click', ()=>{
@@ -1535,6 +1704,51 @@ function renderFixtureList(){ renderListInto('fxList', 'football', store.shared,
 function renderDistrictList(){ renderListInto('districtList', 'district', store.shared, 'shared', renderDistrictList); }
 function renderOvertimeList(){ renderListInto('otList', 'overtime', personalStore(), 'personal', renderOvertimeList); }
 
+function renderTicketCards(containerId, typeId){
+  const el = document.getElementById(containerId);
+  const entries = allEntriesOfType(typeId, store.shared);
+  if(!entries.length){ el.innerHTML = '<div class="fx-empty">Nothing added yet.</div>'; return; }
+  el.innerHTML = '';
+  entries.forEach(en=>{
+    const e = en.entry;
+    const t = typeById(e.typeId);
+    const card = document.createElement('div');
+    card.className = 'ticket-card';
+    const rows = [
+      ['Open form', e.openForm],
+      ['Close form', e.closeForm],
+      ['Staff sale', e.staffSale],
+      ['Closing (pay)', e.closingPay],
+      ['Fixture', e.fixtureDate],
+    ].filter(r => r[1]);
+    card.innerHTML = `
+      <div class="ticket-card-header">
+        <span class="dot" style="background:${t?t.color:'var(--event)'}"></span>
+        <span class="ticket-title">${e.label}</span>
+        <button class="ticket-delete-btn">×</button>
+      </div>
+      <div class="ticket-grid">
+        ${rows.map(r => `<div class="ticket-field"><span class="ticket-field-label">${r[0]}</span><span class="ticket-field-value">${r[1]}</span></div>`).join('')}
+      </div>
+    `;
+    card.querySelector('.ticket-card-header').addEventListener('click', (ev)=>{
+      if(ev.target.classList.contains('ticket-delete-btn')) return;
+      openEntryDetail('shared', en.date, en.idx);
+    });
+    card.querySelector('.ticket-delete-btn').addEventListener('click', ()=>{
+      const arr = store.shared[en.date] || [];
+      arr.splice(en.idx,1);
+      if(arr.length===0) delete store.shared[en.date];
+      saveData();
+      if(typeId==='tickets_home') renderTicketsHomeList(); else renderTicketsAwayList();
+      renderCalendar();
+    });
+    el.appendChild(card);
+  });
+}
+function renderTicketsHomeList(){ renderTicketCards('ticketsHomeList', 'tickets_home'); }
+function renderTicketsAwayList(){ renderTicketCards('ticketsAwayList', 'tickets_away'); }
+
 function addFixtureOfType(dateStr, opponent, venue, typeId, kickoff, address){
   const venueLabel = venue==='H' ? '(H)' : venue==='A' ? '(A)' : '(Neutral)';
   const label = `vs ${opponent} ${venueLabel}`;
@@ -1576,6 +1790,24 @@ document.getElementById('districtAddBtn').addEventListener('click', ()=>{
   document.getElementById('districtKickoff').value = '';
   document.getElementById('districtAddress').value = '';
   renderDistrictList(); renderCalendar();
+});
+document.getElementById('ticketsHomeAddBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('ticketsHomeDate').value;
+  const opponent = document.getElementById('ticketsHomeOpponent').value.trim();
+  const venue = document.getElementById('ticketsHomeVenue').value;
+  if(!dateStr || !opponent){ alert('Add a date and opponent'); return; }
+  addFixtureOfType(dateStr, opponent, venue, 'tickets_home');
+  document.getElementById('ticketsHomeOpponent').value = '';
+  renderTicketsHomeList(); renderCalendar();
+});
+document.getElementById('ticketsAwayAddBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('ticketsAwayDate').value;
+  const opponent = document.getElementById('ticketsAwayOpponent').value.trim();
+  const venue = document.getElementById('ticketsAwayVenue').value;
+  if(!dateStr || !opponent){ alert('Add a date and opponent'); return; }
+  addFixtureOfType(dateStr, opponent, venue, 'tickets_away');
+  document.getElementById('ticketsAwayOpponent').value = '';
+  renderTicketsAwayList(); renderCalendar();
 });
 
 function wireImportSection(prefix, typeId){
@@ -1641,6 +1873,8 @@ function wireImportSection(prefix, typeId){
 }
 wireImportSection('fx', 'football');
 wireImportSection('district', 'district');
+wireImportSection('ticketsHome', 'tickets_home');
+wireImportSection('ticketsAway', 'tickets_away');
 
 async function init(){
   await loadData();
@@ -1648,6 +1882,8 @@ async function init(){
     'Live — shared with Nicola in real time. Anything either of you adds shows up on both phones instantly.';
   seedFixtureList(FOOTBALL_FIXTURES, 'football');
   seedFixtureList(DISTRICT_FIXTURES, 'district');
+  seedFixtureList(STAFF_TICKETS_HOME, 'tickets_home');
+  seedFixtureList(STAFF_TICKETS_AWAY, 'tickets_away');
   populateTypeSelect();
   renderProfileTabs();
   const now = new Date();
