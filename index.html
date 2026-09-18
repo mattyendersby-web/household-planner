@@ -1062,8 +1062,15 @@ function seedFixtureList(list, typeId){
     const venueLabel = fx.venue==='H' ? '(H)' : fx.venue==='A' ? '(A)' : '(Neutral)';
     const label = `vs ${fx.opponent} ${venueLabel}`;
     if(!store.shared[fx.date]) store.shared[fx.date] = [];
-    const already = store.shared[fx.date].some(e => e.typeId===typeId && e.label===label);
-    if(!already){
+    const existing = store.shared[fx.date].find(e => e.typeId===typeId && e.label===label);
+    if(existing){
+      if(fx.notes && !existing.notes){ existing.notes = fx.notes; changed = true; }
+      if(fx.openForm && !existing.openForm){ existing.openForm = fx.openForm; changed = true; }
+      if(fx.closeForm && !existing.closeForm){ existing.closeForm = fx.closeForm; changed = true; }
+      if(fx.staffSale && !existing.staffSale){ existing.staffSale = fx.staffSale; changed = true; }
+      if(fx.closingPay && !existing.closingPay){ existing.closingPay = fx.closingPay; changed = true; }
+      if(fx.fixtureDate && !existing.fixtureDate){ existing.fixtureDate = fx.fixtureDate; changed = true; }
+    }else{
       const entry = {typeId, label};
       if(fx.notes) entry.notes = fx.notes;
       if(fx.openForm) entry.openForm = fx.openForm;
