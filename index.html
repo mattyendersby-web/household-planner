@@ -458,7 +458,10 @@
 
 <div id="fixturesView">
   <div class="fx-section">
-    <h3>Upcoming fixtures</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:2px;">
+      <h3 style="margin:0;">Upcoming fixtures</h3>
+      <button class="btn btn-ghost" id="fxRemoveAllBtn" style="padding:8px 10px;font-size:12px;white-space:nowrap;">Remove all</button>
+    </div>
     <div class="fx-list" id="fxList"></div>
   </div>
   <div class="fx-section">
@@ -845,7 +848,7 @@ const STAFF_TICKETS_AWAY = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015' };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{} };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -864,7 +867,8 @@ function applyRawStore(raw){
       Matty: raw.Matty || {}, Nicola: raw.Nicola || {}, shared: raw.shared || {},
       customTypes: raw.customTypes || [], typeOverrides: raw.typeOverrides || {},
       hiddenBaseTypes: raw.hiddenBaseTypes || [],
-      pin: raw.pin || '2015'
+      pin: raw.pin || '2015',
+      suppressSeed: raw.suppressSeed || {}
     };
   }
 }
@@ -1057,6 +1061,7 @@ function entriesForDate(key){
 }
 
 function seedFixtureList(list, typeId){
+  if(store.suppressSeed && store.suppressSeed[typeId]) return;
   let changed = false;
   list.forEach(fx=>{
     const venueLabel = fx.venue==='H' ? '(H)' : fx.venue==='A' ? '(A)' : '(Neutral)';
@@ -1772,6 +1777,23 @@ function addFixtureOfType(dateStr, opponent, venue, typeId, kickoff, address){
   saveData();
   return true;
 }
+document.getElementById('fxRemoveAllBtn').addEventListener('click', ()=>{
+  const entries = allEntriesOfType('football', store.shared);
+  if(!entries.length){ alert('There are no MK Dons fixtures to remove.'); return; }
+  if(!confirm(`Remove all ${entries.length} MK Dons fixtures? This can't be undone. (You can still add new ones below.)`)) return;
+  Object.keys(store.shared).forEach(dateStr=>{
+    const arr = store.shared[dateStr];
+    if(!arr) return;
+    const kept = arr.filter(e=> e.typeId !== 'football');
+    if(kept.length) store.shared[dateStr] = kept;
+    else delete store.shared[dateStr];
+  });
+  if(!store.suppressSeed) store.suppressSeed = {};
+  store.suppressSeed.football = true;
+  saveData();
+  renderFixtureList();
+  renderCalendar();
+});
 document.getElementById('fxAddBtn').addEventListener('click', ()=>{
   const dateStr = document.getElementById('fxDate').value;
   const opponent = document.getElementById('fxOpponent').value.trim();
