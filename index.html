@@ -611,6 +611,16 @@
       <button class="btn btn-ghost" id="doneCodeBtn" style="width:100%;margin-top:10px;">Done</button>
     </div>
   </div>
+
+  <button class="btn btn-ghost" id="toggleTabsPanelBtn" style="width:100%;margin-top:14px;">Manage Tabs</button>
+  <div id="tabsPanel" style="display:none; margin-top:18px;">
+    <div class="fx-section">
+      <h3>Show or hide tabs</h3>
+      <div class="sub" style="margin-bottom:10px;">Untick a tab to hide it from the top of the app. You can bring it back here any time.</div>
+      <div id="tabsManageList" class="fx-list"></div>
+    </div>
+    <button class="btn btn-ghost" id="doneTabsBtn" style="width:100%;margin-top:6px;">Done</button>
+  </div>
 </div>
 
 <!-- Day editor sheet -->
@@ -848,7 +858,7 @@ const STAFF_TICKETS_AWAY = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{} };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'] };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -868,7 +878,8 @@ function applyRawStore(raw){
       customTypes: raw.customTypes || [], typeOverrides: raw.typeOverrides || {},
       hiddenBaseTypes: raw.hiddenBaseTypes || [],
       pin: raw.pin || '2015',
-      suppressSeed: raw.suppressSeed || {}
+      suppressSeed: raw.suppressSeed || {},
+      hiddenTabs: raw.hiddenTabs || ['overtime']
     };
   }
 }
@@ -877,6 +888,9 @@ function refreshWholeApp(){
   populateTypeSelect();
   renderLegend();
   renderCalendar();
+  applyTabVisibility();
+  const tabsPanel = document.getElementById('tabsPanel');
+  if(tabsPanel && tabsPanel.style.display === 'block') renderTabsManageList();
   if(currentTabName === 'overtime') renderOvertimeList();
   if(currentTabName === 'fixtures') renderFixtureList();
   if(currentTabName === 'district') renderDistrictList();
@@ -1501,7 +1515,23 @@ const TAB_VIEWS = {
   ticketsAway: document.getElementById('ticketsAwayView'),
   types: document.getElementById('typesView'),
 };
+const OPTIONAL_TABS = {
+  repeat: 'Repeat Pattern',
+  overtime: 'Overtime',
+  fixtures: 'MK Dons Fixtures',
+  district: 'Stevenage District',
+  ticketsHome: 'Tottenham Home',
+  ticketsAway: 'Tottenham Away',
+};
+function isTabHidden(key){ return (store.hiddenTabs || []).includes(key); }
+function applyTabVisibility(){
+  Object.keys(OPTIONAL_TABS).forEach(key=>{
+    TAB_BTNS[key].style.display = isTabHidden(key) ? 'none' : '';
+  });
+  if(isTabHidden(currentTabName)) showTab('calendar');
+}
 function showTab(name){
+  if(isTabHidden(name)) name = 'calendar';
   currentTabName = name;
   Object.keys(TAB_BTNS).forEach(key=>{
     TAB_BTNS[key].classList.toggle('active', key===name);
@@ -1920,6 +1950,7 @@ async function init(){
   viewMonth = now.getMonth();
   renderLegend();
   renderCalendar();
+  applyTabVisibility();
 }
 init();
 
@@ -1994,6 +2025,40 @@ document.getElementById('saveCodeBtn').addEventListener('click', ()=>{
   document.getElementById('currentCodeInput').value = '';
   document.getElementById('newCodeInput').value = '';
   document.getElementById('confirmCodeInput').value = '';
+});
+
+// ---- Manage tabs ----
+function renderTabsManageList(){
+  const el = document.getElementById('tabsManageList');
+  el.innerHTML = '';
+  Object.keys(OPTIONAL_TABS).forEach(key=>{
+    const hidden = isTabHidden(key);
+    const row = document.createElement('div');
+    row.className = 'fx-row';
+    row.innerHTML = `<label style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;padding:6px 2px;"><input type="checkbox" class="tab-visibility-toggle" data-tab-key="${key}" ${hidden ? '' : 'checked'} style="width:18px;height:18px;"><span style="flex:1;">${OPTIONAL_TABS[key]}</span></label>`;
+    el.appendChild(row);
+  });
+}
+document.getElementById('toggleTabsPanelBtn').addEventListener('click', ()=>{
+  document.getElementById('tabsPanel').style.display = 'block';
+  renderTabsManageList();
+});
+document.getElementById('doneTabsBtn').addEventListener('click', ()=>{
+  document.getElementById('tabsPanel').style.display = 'none';
+});
+document.getElementById('tabsManageList').addEventListener('change', (e)=>{
+  const key = e.target.dataset.tabKey;
+  if(!key) return;
+  if(!store.hiddenTabs) store.hiddenTabs = [];
+  const shouldShow = e.target.checked;
+  const idx = store.hiddenTabs.indexOf(key);
+  if(shouldShow){
+    if(idx !== -1) store.hiddenTabs.splice(idx, 1);
+  }else{
+    if(idx === -1) store.hiddenTabs.push(key);
+  }
+  saveData();
+  applyTabVisibility();
 });
 
 </script>
