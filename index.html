@@ -876,7 +876,7 @@ const STAFF_TICKETS_AWAY = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'] };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'], deletedSeeds:[] };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -897,7 +897,8 @@ function applyRawStore(raw){
       hiddenBaseTypes: raw.hiddenBaseTypes || [],
       pin: raw.pin || '2015',
       suppressSeed: raw.suppressSeed || {},
-      hiddenTabs: raw.hiddenTabs || ['overtime']
+      hiddenTabs: raw.hiddenTabs || ['overtime'],
+      deletedSeeds: raw.deletedSeeds || []
     };
   }
 }
@@ -922,12 +923,23 @@ async function loadData(){
     if(snap.exists()) applyRawStore(snap.data());
   }catch(e){ console.error('Load failed', e); }
 }
+function showSaveBanner(msg){
+  let b = document.getElementById('saveBanner');
+  if(!b){
+    b = document.createElement('div'); b.id = 'saveBanner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#B3261E;color:#fff;padding:12px 16px;font-size:13px;line-height:1.35;';
+    document.body.appendChild(b);
+  }
+  b.textContent = msg; b.style.display = msg ? 'block' : 'none';
+}
 async function saveData(){
   try{
     localSaveInFlight = true;
     await setDoc(PLANNER_DOC, store);
+    showSaveBanner('');
   }catch(e){
     console.error('Could not save', e);
+    showSaveBanner('NOT SAVED — your change did not reach the database (' + (e && (e.code || e.message) || 'unknown error') + '). Check Firebase rules, then reload.');
   }finally{
     localSaveInFlight = false;
   }
@@ -943,7 +955,7 @@ onSnapshot(PLANNER_DOC, (snap)=>{
     return; // initial load is handled by init() itself
   }
   if(!localSaveInFlight) refreshWholeApp();
-}, (err)=>{ console.error('Live sync error', err); });
+}, (err)=>{ console.error('Live sync error', err); showSaveBanner('Cannot reach the database (' + (err.code || err.message) + '). Check Firebase rules.'); });
 
 function pad(n){ return n<10 ? '0'+n : ''+n; }
 function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
@@ -1092,12 +1104,21 @@ function entriesForDate(key){
   return [...mine, ...includedFromOther, ...(store.shared[key] || [])];
 }
 
+const SEEDED_TYPES = ['football','district','tickets_home','tickets_away'];
+function seedKey(typeId, date, label){ return typeId+'|'+date+'|'+label; }
+function rememberDeleted(entry, date){
+  if(!entry || !SEEDED_TYPES.includes(entry.typeId)) return;
+  if(!store.deletedSeeds) store.deletedSeeds = [];
+  const k = seedKey(entry.typeId, date, entry.label);
+  if(!store.deletedSeeds.includes(k)) store.deletedSeeds.push(k);
+}
 function seedFixtureList(list, typeId){
   if(store.suppressSeed && store.suppressSeed[typeId]) return;
   let changed = false;
   list.forEach(fx=>{
     const venueLabel = fx.venue==='H' ? '(H)' : fx.venue==='A' ? '(A)' : '(Neutral)';
     const label = `vs ${fx.opponent} ${venueLabel}`;
+    if((store.deletedSeeds||[]).includes(seedKey(typeId, fx.date, label))) return;
     if(!store.shared[fx.date]) store.shared[fx.date] = [];
     const existing = store.shared[fx.date].find(e => e.typeId===typeId && e.label===label);
     if(existing){
@@ -1359,6 +1380,7 @@ function renderDayEntries(){
     pill.innerHTML = `<span class="dot" style="background:${t?t.color:'var(--event)'}"></span><span class="pill-label" style="cursor:pointer;">${entryDisplayLabel(e)}</span><button data-idx="${idx}">×</button>`;
     pill.querySelector('.pill-label').addEventListener('click', ()=> openEntryDetail('shared', activeDate, idx));
     pill.querySelector('button').addEventListener('click', ()=>{
+      rememberDeleted(store.shared[activeDate][idx], activeDate);
       store.shared[activeDate].splice(idx,1);
       if(store.shared[activeDate].length===0) delete store.shared[activeDate];
       saveData();
@@ -1751,6 +1773,7 @@ function renderListInto(containerId, typeId, sourceObj, scope, afterDelete){
     row.querySelector('.fx-info').addEventListener('click', ()=> openEntryDetail(scope, en.date, en.idx));
     row.querySelector('button').addEventListener('click', ()=>{
       const arr = sourceObj[en.date] || [];
+      rememberDeleted(arr[en.idx], en.date);
       arr.splice(en.idx,1);
       if(arr.length===0) delete sourceObj[en.date];
       saveData();
@@ -1797,6 +1820,7 @@ function renderTicketCards(containerId, typeId){
     });
     card.querySelector('.ticket-delete-btn').addEventListener('click', ()=>{
       const arr = store.shared[en.date] || [];
+      rememberDeleted(arr[en.idx], en.date);
       arr.splice(en.idx,1);
       if(arr.length===0) delete store.shared[en.date];
       saveData();
