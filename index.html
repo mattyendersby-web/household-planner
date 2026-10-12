@@ -284,6 +284,14 @@
   .dinner-row.today{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,182,121,0.3);}
   .dinner-day{font-size:11.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;}
   .dinner-row.today .dinner-day{color:var(--gold);}
+  .dinner-open{background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;padding:0;letter-spacing:0.03em;}
+  .dinner-open.has{color:var(--text);}
+  #dinnerDetailPage{display:none;position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 20px 40px;}
+  #dinnerDetailPage .dd-back{background:none;border:none;color:var(--gold);font-size:14px;font-weight:700;cursor:pointer;padding:6px 0;margin-bottom:8px;}
+  #dinnerDetailPage h2{font-family:Georgia,serif;font-size:26px;margin:0 0 4px;}
+  #dinnerDetailPage .dd-label{font-size:11.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;margin:20px 0 8px;}
+  #dinnerDetailPage textarea{min-height:170px;margin-top:0;font-size:14.5px;line-height:1.5;}
+  #dinnerDetailPage input[type=text]{font-size:16px;}
   .fx-section{margin-bottom:26px;}
   .fx-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0 0 12px;}
   .fx-list{display:flex;flex-direction:column;gap:8px;}
@@ -497,6 +505,20 @@
     <button class="btn btn-primary" id="dinnerPasteBtn" style="width:100%;margin-top:10px;">Fill the week</button>
     <div id="dinnerPasteStatus" class="status-msg"></div>
   </div>
+</div>
+
+<div id="dinnerDetailPage">
+  <button class="dd-back" id="ddBackBtn">&lsaquo; Back to dinners</button>
+  <h2 id="ddTitle">Monday</h2>
+  <div class="sub" id="ddDate"></div>
+  <div class="dd-label">Meal</div>
+  <input type="text" id="ddMeal" placeholder="What's for dinner?">
+  <div class="dd-label">Ingredients</div>
+  <textarea id="ddIngredients" placeholder="One per line, e.g.&#10;500g mince&#10;1 onion&#10;Tin of tomatoes"></textarea>
+  <div class="dd-label">Instructions</div>
+  <textarea id="ddMethod" placeholder="Method, cooking time, notes..."></textarea>
+  <button class="btn btn-primary" id="ddDoneBtn" style="width:100%;margin-top:22px;">Done</button>
+  <div class="sub" style="margin-top:10px;text-align:center;">Saves automatically as you type</div>
 </div>
 
 <div id="fixturesView">
@@ -901,7 +923,7 @@ const STAFF_TICKETS_AWAY = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'], deletedSeeds:[], dinners:{} };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'], deletedSeeds:[], dinners:{}, dinnerDetails:{} };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -924,7 +946,8 @@ function applyRawStore(raw){
       suppressSeed: raw.suppressSeed || {},
       hiddenTabs: raw.hiddenTabs || ['overtime'],
       deletedSeeds: raw.deletedSeeds || [],
-      dinners: raw.dinners || {}
+      dinners: raw.dinners || {},
+      dinnerDetails: raw.dinnerDetails || {}
     };
   }
 }
@@ -2117,7 +2140,12 @@ function renderDinner(){
     const dk = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
     const row = document.createElement('div');
     row.className = 'dinner-row' + (dk===todayKey ? ' today' : '');
-    row.innerHTML = `<div class="dinner-day"><span>${name}</span><span>${d.getDate()} ${MONTH_SHORT[d.getMonth()]}</span></div><input type="text" class="dinner-input" data-day="${i}" placeholder="What's for dinner?">`;
+    const det = (store.dinnerDetails || {})[key + '|' + i];
+    const hasDet = !!(det && (det.ingredients || det.method));
+    row.innerHTML = `<div class="dinner-day"><span>${name} &middot; ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}</span><button class="dinner-open${hasDet ? ' has' : ''}">${hasDet ? 'Recipe \u2713 ' : 'Recipe '}&rsaquo;</button></div><input type="text" class="dinner-input" data-day="${i}" placeholder="What's for dinner?">`;
+    row.querySelector('.dinner-open').addEventListener('click', ()=> openDinnerDetail(i));
+    row.querySelector('.dinner-day span').style.cursor = 'pointer';
+    row.querySelector('.dinner-day span').addEventListener('click', ()=> openDinnerDetail(i));
     const inp = row.querySelector('input');
     inp.value = week[i] || '';
     inp.addEventListener('change', ()=>{
@@ -2131,6 +2159,47 @@ function renderDinner(){
     el.appendChild(row);
   });
 }
+let ddDayIdx = null;
+function ddKey(){ return dateKey(dinnerAnchor.getFullYear(), dinnerAnchor.getMonth(), dinnerAnchor.getDate()); }
+function openDinnerDetail(i){
+  ddDayIdx = i;
+  const key = ddKey();
+  const d = new Date(dinnerAnchor); d.setDate(d.getDate()+i);
+  document.getElementById('ddTitle').textContent = WEEKDAY_NAMES[i];
+  document.getElementById('ddDate').textContent = `${d.getDate()} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('ddMeal').value = ((store.dinners||{})[key]||{})[i] || '';
+  const det = (store.dinnerDetails||{})[key+'|'+i] || {};
+  document.getElementById('ddIngredients').value = det.ingredients || '';
+  document.getElementById('ddMethod').value = det.method || '';
+  const pg = document.getElementById('dinnerDetailPage');
+  pg.style.display = 'block'; pg.scrollTop = 0;
+}
+function saveDinnerDetail(){
+  if(ddDayIdx === null) return;
+  const key = ddKey(), i = ddDayIdx;
+  if(!store.dinners) store.dinners = {};
+  if(!store.dinnerDetails) store.dinnerDetails = {};
+  const meal = document.getElementById('ddMeal').value.trim();
+  const ing = document.getElementById('ddIngredients').value;
+  const method = document.getElementById('ddMethod').value;
+  if(!store.dinners[key]) store.dinners[key] = {};
+  if(meal) store.dinners[key][i] = meal; else delete store.dinners[key][i];
+  if(!Object.keys(store.dinners[key]).length) delete store.dinners[key];
+  if(ing.trim() || method.trim()) store.dinnerDetails[key+'|'+i] = {ingredients: ing, method: method};
+  else delete store.dinnerDetails[key+'|'+i];
+  saveData();
+}
+['ddMeal','ddIngredients','ddMethod'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', saveDinnerDetail);
+});
+function closeDinnerDetail(){
+  saveDinnerDetail();
+  document.getElementById('dinnerDetailPage').style.display = 'none';
+  ddDayIdx = null;
+  renderDinner();
+}
+document.getElementById('ddBackBtn').addEventListener('click', closeDinnerDetail);
+document.getElementById('ddDoneBtn').addEventListener('click', closeDinnerDetail);
 function parseDinnerText(text){
   const names = ['mon','tue','wed','thu','fri','sat','sun'];
   const re = /(^|[\n,;|])[ \t]*(mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b[ \t]*[-\u2013\u2014:=.)]*[ \t]*/gi;
