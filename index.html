@@ -490,6 +490,13 @@
   </div>
   <div id="dinnerList"></div>
   <div class="sub" style="margin-top:6px;">Type what you're having — it saves automatically and shows on both phones.</div>
+  <div class="fx-section" style="margin-top:22px;">
+    <h3>Paste a whole week</h3>
+    <div class="sub" style="margin-bottom:10px;">Paste your menu, e.g. "Monday - Spag bol" then "Tuesday - Chicken curry" on new lines. It fills the week shown above.</div>
+    <textarea id="dinnerPasteText" placeholder="Monday - Spag bol&#10;Tuesday - Chicken curry&#10;Wednesday - Fish and chips"></textarea>
+    <button class="btn btn-primary" id="dinnerPasteBtn" style="width:100%;margin-top:10px;">Fill the week</button>
+    <div id="dinnerPasteStatus" class="status-msg"></div>
+  </div>
 </div>
 
 <div id="fixturesView">
@@ -2124,6 +2131,39 @@ function renderDinner(){
     el.appendChild(row);
   });
 }
+function parseDinnerText(text){
+  const names = ['mon','tue','wed','thu','fri','sat','sun'];
+  const re = /(^|[\n,;|])[ \t]*(mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b[ \t]*[-\u2013\u2014:=.)]*[ \t]*/gi;
+  const hits = []; let m;
+  while((m = re.exec(text))){ hits.push({day: names.indexOf(m[2].slice(0,3).toLowerCase()), start: m.index, end: re.lastIndex}); }
+  const out = {};
+  const clean = v => v.replace(/[\s,;|]+$/,'').replace(/^[\s\-\u2013\u2014:]+/,'').replace(/\s*\n\s*/g,' ').trim();
+  if(hits.length){
+    hits.forEach((h,i)=>{
+      const v = clean(text.slice(h.end, i+1<hits.length ? hits[i+1].start : text.length));
+      if(v) out[h.day] = v;
+    });
+  }else{
+    text.split(/\n/).map(l=>l.replace(/^\s*(?:\d+[.)]|[-*\u2022])\s*/,'').trim()).filter(Boolean).slice(0,7)
+      .forEach((l,i)=>{ out[i] = l; });
+  }
+  return out;
+}
+document.getElementById('dinnerPasteBtn').addEventListener('click', ()=>{
+  const status = document.getElementById('dinnerPasteStatus');
+  const parsed = parseDinnerText(document.getElementById('dinnerPasteText').value);
+  const days = Object.keys(parsed);
+  if(!days.length){ status.style.color = 'var(--overtime)'; status.textContent = "Couldn't find any meals in that text."; return; }
+  const key = dateKey(dinnerAnchor.getFullYear(), dinnerAnchor.getMonth(), dinnerAnchor.getDate());
+  if(!store.dinners) store.dinners = {};
+  if(!store.dinners[key]) store.dinners[key] = {};
+  days.forEach(d=>{ store.dinners[key][d] = parsed[d]; });
+  saveData();
+  renderDinner();
+  document.getElementById('dinnerPasteText').value = '';
+  status.style.color = 'var(--gold)';
+  status.textContent = `Added ${days.length} dinner${days.length===1?'':'s'} to this week.`;
+});
 document.getElementById('dinnerPrevBtn').addEventListener('click', ()=>{ dinnerAnchor.setDate(dinnerAnchor.getDate()-7); renderDinner(); });
 document.getElementById('dinnerNextBtn').addEventListener('click', ()=>{ dinnerAnchor.setDate(dinnerAnchor.getDate()+7); renderDinner(); });
 
