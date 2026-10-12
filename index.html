@@ -279,7 +279,11 @@
   .week-entry{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:5px;}
   .week-empty{font-size:12.5px;color:var(--text-muted);}
 
-  #repeatView,#overtimeView,#fixturesView,#districtView{display:none;padding:18px 20px 30px;}
+  #repeatView,#overtimeView,#fixturesView,#districtView,#dinnerView{display:none;padding:18px 20px 30px;}
+  .dinner-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px;}
+  .dinner-row.today{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,182,121,0.3);}
+  .dinner-day{font-size:11.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;}
+  .dinner-row.today .dinner-day{color:var(--gold);}
   .fx-section{margin-bottom:26px;}
   .fx-section h3{font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:0 0 12px;}
   .fx-list{display:flex;flex-direction:column;gap:8px;}
@@ -390,6 +394,7 @@
   <button class="tab-btn active" id="tabCalendarBtn">Calendar</button>
   <button class="tab-btn" id="tabRepeatBtn">Repeat Pattern</button>
   <button class="tab-btn" id="tabOvertimeBtn">Overtime</button>
+  <button class="tab-btn" id="tabDinnerBtn">Dinner</button>
   <button class="tab-btn" id="tabFixturesBtn">MK Dons Fixtures</button>
   <button class="tab-btn" id="tabDistrictBtn">Stevenage District</button>
   <button class="tab-btn" id="tabTicketsHomeBtn">Tottenham Home</button>
@@ -472,6 +477,19 @@
       <button class="btn btn-primary" id="otAddBtn">Add overtime</button>
     </div>
   </div>
+</div>
+
+<div id="dinnerView">
+  <div class="week-planner-header">
+    <h3>Dinner this week</h3>
+    <div class="week-nav">
+      <button id="dinnerPrevBtn">&lsaquo;</button>
+      <span class="week-range-label" id="dinnerRangeLabel">—</span>
+      <button id="dinnerNextBtn">&rsaquo;</button>
+    </div>
+  </div>
+  <div id="dinnerList"></div>
+  <div class="sub" style="margin-top:6px;">Type what you're having — it saves automatically and shows on both phones.</div>
 </div>
 
 <div id="fixturesView">
@@ -876,7 +894,7 @@ const STAFF_TICKETS_AWAY = [
 
 const PROFILES = ['Matty', 'Nicola'];
 
-let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'], deletedSeeds:[] };
+let store = { Matty:{}, Nicola:{}, shared:{}, customTypes:[], typeOverrides:{}, hiddenBaseTypes:[], pin:'2015', suppressSeed:{}, hiddenTabs:['overtime'], deletedSeeds:[], dinners:{} };
 let activeProfile = 'Matty';
 let currentTabName = 'calendar';
 let viewYear, viewMonth;
@@ -898,7 +916,8 @@ function applyRawStore(raw){
       pin: raw.pin || '2015',
       suppressSeed: raw.suppressSeed || {},
       hiddenTabs: raw.hiddenTabs || ['overtime'],
-      deletedSeeds: raw.deletedSeeds || []
+      deletedSeeds: raw.deletedSeeds || [],
+      dinners: raw.dinners || {}
     };
   }
 }
@@ -911,6 +930,7 @@ function refreshWholeApp(){
   const tabsPanel = document.getElementById('tabsPanel');
   if(tabsPanel && tabsPanel.style.display === 'block') renderTabsManageList();
   if(currentTabName === 'overtime') renderOvertimeList();
+  if(currentTabName === 'dinner' && !document.activeElement.classList.contains('dinner-input')) renderDinner();
   if(currentTabName === 'fixtures') renderFixtureList();
   if(currentTabName === 'district') renderDistrictList();
   const typesPanel = document.getElementById('typesPanel');
@@ -1539,6 +1559,7 @@ const TAB_BTNS = {
   calendar: document.getElementById('tabCalendarBtn'),
   repeat: document.getElementById('tabRepeatBtn'),
   overtime: document.getElementById('tabOvertimeBtn'),
+  dinner: document.getElementById('tabDinnerBtn'),
   fixtures: document.getElementById('tabFixturesBtn'),
   district: document.getElementById('tabDistrictBtn'),
   ticketsHome: document.getElementById('tabTicketsHomeBtn'),
@@ -1549,6 +1570,7 @@ const TAB_VIEWS = {
   calendar: document.getElementById('calendarView'),
   repeat: document.getElementById('repeatView'),
   overtime: document.getElementById('overtimeView'),
+  dinner: document.getElementById('dinnerView'),
   fixtures: document.getElementById('fixturesView'),
   district: document.getElementById('districtView'),
   ticketsHome: document.getElementById('ticketsHomeView'),
@@ -1558,6 +1580,7 @@ const TAB_VIEWS = {
 const OPTIONAL_TABS = {
   repeat: 'Repeat Pattern',
   overtime: 'Overtime',
+  dinner: 'Dinner',
   fixtures: 'MK Dons Fixtures',
   district: 'Stevenage District',
   ticketsHome: 'Tottenham Home',
@@ -1580,6 +1603,7 @@ function showTab(name){
   if(name==='calendar') TAB_VIEWS.calendar.style.display = '';
   if(name==='repeat') initRepeatDefaults();
   if(name==='overtime') renderOvertimeList();
+  if(name==='dinner') renderDinner();
   if(name==='fixtures') renderFixtureList();
   if(name==='district') renderDistrictList();
   if(name==='ticketsHome') renderTicketsHomeList();
@@ -1589,6 +1613,7 @@ function showTab(name){
 TAB_BTNS.calendar.addEventListener('click', ()=>showTab('calendar'));
 TAB_BTNS.repeat.addEventListener('click', ()=>showTab('repeat'));
 TAB_BTNS.overtime.addEventListener('click', ()=>showTab('overtime'));
+TAB_BTNS.dinner.addEventListener('click', ()=>showTab('dinner'));
 TAB_BTNS.fixtures.addEventListener('click', ()=>showTab('fixtures'));
 TAB_BTNS.district.addEventListener('click', ()=>showTab('district'));
 TAB_BTNS.ticketsHome.addEventListener('click', ()=>showTab('ticketsHome'));
@@ -2068,6 +2093,39 @@ document.getElementById('saveCodeBtn').addEventListener('click', ()=>{
   document.getElementById('newCodeInput').value = '';
   document.getElementById('confirmCodeInput').value = '';
 });
+
+// ---- Dinner ----
+let dinnerAnchor = mondayOf(new Date());
+function renderDinner(){
+  const key = dateKey(dinnerAnchor.getFullYear(), dinnerAnchor.getMonth(), dinnerAnchor.getDate());
+  const end = new Date(dinnerAnchor); end.setDate(end.getDate()+6);
+  document.getElementById('dinnerRangeLabel').textContent =
+    `${dinnerAnchor.getDate()} ${MONTH_SHORT[dinnerAnchor.getMonth()]} – ${end.getDate()} ${MONTH_SHORT[end.getMonth()]}`;
+  const week = (store.dinners && store.dinners[key]) || {};
+  const todayKey = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const el = document.getElementById('dinnerList');
+  el.innerHTML = '';
+  WEEKDAY_NAMES.forEach((name, i)=>{
+    const d = new Date(dinnerAnchor); d.setDate(d.getDate()+i);
+    const dk = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+    const row = document.createElement('div');
+    row.className = 'dinner-row' + (dk===todayKey ? ' today' : '');
+    row.innerHTML = `<div class="dinner-day"><span>${name}</span><span>${d.getDate()} ${MONTH_SHORT[d.getMonth()]}</span></div><input type="text" class="dinner-input" data-day="${i}" placeholder="What's for dinner?">`;
+    const inp = row.querySelector('input');
+    inp.value = week[i] || '';
+    inp.addEventListener('change', ()=>{
+      if(!store.dinners) store.dinners = {};
+      if(!store.dinners[key]) store.dinners[key] = {};
+      const v = inp.value.trim();
+      if(v) store.dinners[key][i] = v; else delete store.dinners[key][i];
+      if(!Object.keys(store.dinners[key]).length) delete store.dinners[key];
+      saveData();
+    });
+    el.appendChild(row);
+  });
+}
+document.getElementById('dinnerPrevBtn').addEventListener('click', ()=>{ dinnerAnchor.setDate(dinnerAnchor.getDate()-7); renderDinner(); });
+document.getElementById('dinnerNextBtn').addEventListener('click', ()=>{ dinnerAnchor.setDate(dinnerAnchor.getDate()+7); renderDinner(); });
 
 // ---- Manage tabs ----
 function renderTabsManageList(){
